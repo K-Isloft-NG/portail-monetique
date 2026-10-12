@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+todo/
+.DS_Store
+Thumbs.db
