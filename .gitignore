@@ -4,3 +4,13 @@
 todo/
 .DS_Store
 Thumbs.db
+
+node_modules/
+.next/
+out/
+build/
+coverage/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
