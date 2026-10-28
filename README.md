@@ -3,6 +3,20 @@
 Projet BUT2 Informatique, module Qualité de développement (Université Gustave Eiffel).
 Portail Web de gestion de paiements par cartes bancaires, avec un jeu de données entièrement fictif.
 
+Version en ligne : https://portail-monetique.vercel.app
+
+## État d'avancement
+
+Disponible à la fin du Sprint 1 :
+
+- connexion par identifiant et mot de passe, avec une session signée valable huit heures ;
+- trois profils (administrateur, Product Owner, commerçant), chacun avec son espace : `/admin`, `/po` et `/client` ;
+- cloisonnement des commerçants : un commerçant n'accède qu'aux données de son entreprise, le SIREN étant toujours lu dans la session et jamais dans l'adresse ;
+- avertissement après deux échecs de connexion et bouton d'affichage du mot de passe ;
+- en-têtes de sécurité HTTP et route de contrôle `/api/health`.
+
+Les écrans de trésorerie, de remises, d'impayés, de graphiques et d'exports sont prévus dans les sprints suivants.
+
 ## Installation
 
 Prérequis : Node.js 22.12 ou supérieur dans la série 22, Node.js 24, ou Node.js 26 et supérieur, avec npm.
@@ -20,11 +34,24 @@ L'accès à PostgreSQL sur Neon se fait en SQL direct, sans ORM.
 Créer un fichier `.env.local` à partir des noms présents dans `.env.example`, sans remplacer un fichier existant.
 Renseigner localement :
 
-- `DATABASE_URL` : chaîne de connexion à la base Neon de développement ;
-- `SESSION_SECRET` : secret de signature réservé à la future gestion des sessions.
+- `DATABASE_URL` : chaîne de connexion à la branche `dev` de la base Neon ;
+- `SESSION_SECRET` : secret de signature des sessions, une chaîne aléatoire longue propre à chaque environnement.
 
-Ces valeurs restent locales et ne doivent jamais être partagées ou versionnées.
+Les variables `E2E_*` du fichier d'exemple sont facultatives : ce sont les mots de passe des comptes de démonstration, utilisés seulement pour des vérifications manuelles en local. Elles ne servent ni au build ni aux tests.
+
+Ces valeurs restent locales et ne doivent jamais être partagées ou versionnées. Le fichier `.env.local` est ignoré par Git.
 Le build et les tests unitaires ne nécessitent pas de connexion à la base.
+
+## Base de données
+
+Les scripts du dossier `database/` sont exécutés manuellement dans le SQL Editor de Neon, après relecture :
+
+- `schema.sql` crée les sept tables ;
+- `seed.sql` charge le jeu de démonstration (quatre entreprises, douze mois de transactions) ;
+- `rollback.sql` supprime les sept tables et leurs données.
+
+Le projet Neon comporte deux branches : `dev` pour le développement local et les déploiements de préproduction, `production` pour le site en ligne. La procédure complète est dans [docs/base-de-donnees.md](docs/base-de-donnees.md).
+Les identifiants des comptes de démonstration ne sont pas versionnés : ils sont remis séparément.
 
 ## Lancement
 
@@ -32,16 +59,14 @@ Le build et les tests unitaires ne nécessitent pas de connexion à la base.
 npm run dev
 ```
 
-Ouvrir `http://localhost:3000`. La racine redirige vers `/login`.
-La page de connexion sera ajoutée lors de la mission suivante : cette adresse répond pour l'instant 404.
+Ouvrir `http://localhost:3000`. La racine redirige vers `/login` ; après connexion, chaque profil arrive dans son espace.
 
 Le contrôle `GET /api/health` exécute uniquement `SELECT 1` :
 
 - HTTP 200 et `{"status":"ok"}` si la base répond ;
 - HTTP 503 et `{"status":"erreur"}` si la configuration manque ou si la base est indisponible.
 
-Le détail des erreurs de connexion n'est jamais renvoyé. Pour contrôler la connexion réelle,
-le responsable de l'environnement ouvre cette route après avoir configuré `.env.local`.
+Le détail des erreurs de connexion n'est jamais renvoyé.
 
 Pour lancer une version compilée localement : `npm run build`, puis `npm start`.
 
@@ -53,23 +78,40 @@ npm run build
 npm test
 ```
 
-Les tests contrôlent l'absence de `DATABASE_URL`, la séparation des paramètres SQL et
-les réponses de la route de contrôle. Ils simulent le pilote de base et ne contactent pas Neon.
+Les tests couvrent la session signée, l'authentification, les gardes d'accès et le cloisonnement, le proxy, les en-têtes HTTP, la route de contrôle et la séparation des paramètres SQL.
+Ils simulent le pilote de base et ne contactent pas Neon.
+
+## Principes de sécurité
+
+- Requêtes SQL paramétrées (`$1`, `$2`), jamais de valeur concaténée dans le texte d'une requête.
+- Mots de passe hachés avec bcrypt (coût 10) ; un identifiant inconnu subit la même comparaison, et le message d'erreur est identique dans les deux cas.
+- Cookie de session `httpOnly`, `sameSite=lax`, `secure` en production, signé avec `SESSION_SECRET`.
+- Chaque page protégée relit le compte en base et vérifie son profil et son entreprise. Le proxy se limite à rediriger les visiteurs sans cookie vers `/login`.
+- Aucun secret ni mot de passe dans les fichiers versionnés.
 
 ## Structure
 
 ```text
-src/app/          Pages, styles et routes HTTP
-src/components/  Composants d'interface à ajouter selon les stories
-src/lib/         Accès SQL et futurs utilitaires serveur
-database/        Schéma, données fictives et retour arrière SQL
-tests/           Tests unitaires
-docs/            Conception, suivi et preuves de tests
+src/app/          Pages (login, admin, po, client) et routes HTTP (api/health)
+src/components/   Composants d'interface (formulaire de connexion, bouton de déconnexion)
+src/lib/          Session, authentification, contrôle d'accès et accès SQL
+src/proxy.ts      Redirection vers /login quand le cookie de session est absent
+database/         Schéma, données fictives et retour arrière SQL
+tests/            Tests unitaires
+docs/             Déploiement et base de données, dossiers prévus pour la conception, le suivi et les tests
 ```
 
-Le module `src/lib/db.ts` s'utilise côté serveur avec des requêtes SQL fixes et des
-paramètres séparés (`$1`, `$2`). Les futurs accès aux données d'entreprise devront passer
-par le cloisonnement fondé sur la session. Aucun accès métier ni mécanisme de session
-n'est encore implémenté dans ce socle.
+Le module `src/lib/db.ts` s'utilise côté serveur avec des requêtes SQL fixes et des paramètres séparés.
+Tout accès aux données d'une entreprise passe par `getClientCompany` (`src/lib/access.ts`), qui fixe le SIREN à partir de la session.
 
-Les scripts SQL du dossier `database/` sont exécutés manuellement après validation.
+## Déploiement
+
+L'application est hébergée sur Vercel et la base sur Neon, toutes deux en région Francfort.
+`main` alimente la production ; les autres branches produisent des déploiements de préproduction, reliés à la branche `dev` de la base.
+Les variables d'environnement sont définies séparément pour chaque environnement. Voir [docs/deploiement.md](docs/deploiement.md).
+
+## Conventions de travail
+
+- `main` (production) et `develop` (intégration) sont permanentes. Chaque travail se fait sur une branche `feature/<epic>-<sujet>` créée depuis `develop`.
+- Les messages de commit sont en français, commencent par un verbe à l'infinitif et se terminent par la référence de la story, par exemple `Ajouter les en-têtes de sécurité HTTP (E6-TS1)`.
+- Les branches sont fusionnées par demande de fusion (pull request), avec une liste de contrôle de relecture dans la description, en conservant un commit de fusion.
