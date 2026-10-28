@@ -1,1 +1,93 @@
 @import "tailwindcss";
+@theme {
+  --color-papier: #F3F5F4;
+  --color-blanc: #FFFFFF;
+  --color-encre: #16222A;
+  --color-encre-douce: #4A5960;
+  --color-petrole: #0E4A57;
+  --color-petrole-clair: #E3EEF0;
+  --color-filet: #D2DAD8;
+  --color-contour-champ: #7A878C;
+  --color-debit: #B42318;
+  --color-debit-clair: #FCEBE9;
+  --color-ocre: #8A5A00;
+}
+body { margin: 0; background: var(--color-papier); color: var(--color-encre); font-size: 16px; line-height: 1.5; }
+* { box-sizing: border-box; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+:where(a, button, input):focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 2px; }
+h1 { font-size: 26px; font-weight: 600; line-height: 1.25; }
+h2 { font-size: 20px; font-weight: 600; line-height: 1.3; }
+p { max-width: 75ch; }
+.button-primary, .button-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 20px; border: 1px solid var(--color-petrole); border-radius: 4px; font-size: 14px; font-weight: 500; text-decoration: none; }
+.button-primary { background: var(--color-petrole); color: var(--color-blanc); }
+.button-primary:hover { background: var(--color-encre); }
+.button-secondary { background: var(--color-blanc); color: var(--color-petrole); }
+.button-secondary:hover { background: var(--color-petrole-clair); }
+button:disabled { cursor: wait; opacity: .6; }
+.login-layout { display: grid; grid-template-columns: minmax(0, 1fr) 520px; min-height: 100dvh; }
+.login-intro { padding: 96px 80px; border-right: 1px solid var(--color-filet); }
+.login-intro h1 { max-width: 420px; padding-bottom: 14px; border-bottom: 3px double var(--color-encre); }
+.login-intro p { max-width: 420px; margin-top: 14px; color: var(--color-encre-douce); line-height: 1.6; }
+.login-panel { padding: 96px 64px; background: var(--color-blanc); }
+.login-form { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; font-size: 14px; }
+.login-form label { display: block; margin-bottom: 6px; font-weight: 500; }
+.login-form input { width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--color-contour-champ); border-radius: 4px; background: var(--color-blanc); }
+.password-field { display: flex; }
+.password-field input { border-radius: 4px 0 0 4px; }
+.password-field button { border: 1px solid var(--color-petrole); border-left: 0; padding: 0 14px; border-radius: 0 4px 4px 0; background: var(--color-blanc); color: var(--color-petrole); }
+.login-error { padding: 12px 14px; border: 1px solid var(--color-debit); border-radius: 4px; background: var(--color-debit-clair); color: var(--color-debit); }
+.login-error p + p { margin-top: 4px; }
+.login-form > .button-primary { align-self: flex-start; padding-inline: 28px; height: 44px; font-size: 16px; }
+.workspace { display: grid; grid-template-columns: 160px minmax(0, 1fr); min-height: 100dvh; }
+.sidebar { display: flex; flex-direction: column; padding: 24px 12px; border-right: 1px solid var(--color-filet); background: var(--color-blanc); }
+.portal-name { color: var(--color-petrole); font-size: 14px; font-weight: 600; padding: 0 8px 20px; }
+.mobile-menu { display: none; }
+.sidebar-content { display: flex; flex: 1; flex-direction: column; }
+.sidebar nav a { display: block; padding: 9px 8px; border-radius: 4px; background: var(--color-petrole-clair); color: var(--color-petrole); font-size: 14px; font-weight: 600; }
+.identity { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--color-filet); font-size: 13px; overflow-wrap: anywhere; }
+.identity p + p { color: var(--color-encre-douce); }
+.identity form { margin-top: 10px; }
+.identity button { width: 100%; padding-inline: 4px; font-size: 13px; }
+.workspace-main { min-width: 0; padding: 44px 56px 56px; }
+.summary { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--color-filet); }
+.summary p { margin-top: 10px; }
+.company-block { padding: 20px 0; border-block: 1px solid var(--color-filet); background: var(--color-blanc); margin-bottom: 24px; }
+.company-block dt, .muted { color: var(--color-encre-douce); font-size: 14px; }
+.company-block dd { margin-top: 6px; }
+.text-link { color: var(--color-petrole); text-decoration: underline; text-underline-offset: 4px; }
+.register { width: 100%; border-collapse: collapse; background: var(--color-blanc); font-size: 14px; text-align: left; }
+.register caption { text-align: left; padding-bottom: 12px; font-weight: 500; }
+.register th { color: var(--color-encre-douce); font-weight: 500; }
+.register th, .register td { height: 44px; padding: 10px 20px; border-bottom: 1px solid var(--color-filet); overflow-wrap: anywhere; }
+.register tfoot { border-top: 3px double var(--color-encre); font-weight: 600; }
+.cell-label { display: none; }
+@media (max-width: 1023px) {
+  .login-intro { padding: 64px 40px; }
+  .login-panel { padding: 64px 40px; }
+  .workspace-main { padding: 32px; }
+}
+@media (max-width: 767px) {
+  .login-layout, .workspace { display: block; }
+  .login-intro, .login-panel { padding: 32px 20px; }
+  .login-intro { border-right: 0; border-bottom: 1px solid var(--color-filet); }
+  .sidebar { padding: 8px 20px; border-right: 0; border-bottom: 1px solid var(--color-filet); }
+  .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .portal-name { padding: 0; }
+  .mobile-menu { display: inline-flex; min-height: 44px; }
+  .sidebar-content { display: none; padding-block: 16px; }
+  .sidebar-content.is-open { display: flex; gap: 24px; }
+  .workspace-main { padding: 28px 20px; }
+  /* Les cellules gardent leurs en-têtes accessibles dans la lecture empilée. */
+  .register, .register tbody, .register tfoot, .register tr, .register td { display: block; width: 100%; }
+  .register thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .register tr { padding: 8px 0; border-bottom: 1px solid var(--color-filet); }
+  .register td { height: auto; min-height: 44px; border: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 12px; padding: 10px 14px; }
+  .cell-label { display: inline; color: var(--color-encre-douce); font-weight: 500; }
+  .register td > :last-child { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
