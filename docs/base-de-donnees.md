@@ -1,26 +1,26 @@
 # Initialiser la base de production Neon
 
-Procédure du 27/10/2026, réservée à Karlos après validation du responsable technique. Les requêtes présentées sont à relire et à exécuter manuellement dans le SQL Editor. Aucune connexion à Neon ni exécution SQL distante n'a été effectuée pour cette préparation.
+Procédure appliquée le 27/10/2026 sur la branche de production du projet Neon. Les requêtes sont relues puis exécutées manuellement dans le SQL Editor.
 
 ## 1. Périmètre et décision sur les données
 
-Projet : `portail-monetique`. La branche `dev` contient déjà le jeu de démonstration selon le cadrage reçu. La branche par défaut sert de production : relever son nom exact dans la console, sans supposer qu'il s'agit de `main`. Vérifier aussi base, rôle et région Francfort. Ces informations distantes sont déclarées par le cadrage, elles restent à contrôler avant exécution.
+Projet : `portail-monetique`. La branche `dev` contient le jeu de démonstration. La branche par défaut, nommée `production`, sert de production : ne pas la confondre avec la branche Git `main`. Avant chaque exécution, vérifier la branche, la base (`neondb`), le rôle et la région (Francfort).
 
 Les scripts locaux sont `database/schema.sql`, `database/seed.sql` et `database/rollback.sql`. Le schéma crée sept tables et quatre index explicites. Le seed est transactionnel (`BEGIN` et `COMMIT`) et non rejouable sur des données déjà présentes. Le schéma ne contient ni transaction explicite ni `IF NOT EXISTS`. Le retour arrière supprime les sept tables et toutes leurs données, il ne restaure rien.
 
-**Décision à soumettre au responsable technique : faut-il charger le jeu de démonstration en production ?** Recommandation : oui, parce que la soutenance a lieu sur la production et doit montrer filtres, historique, graphiques, impayés et cloisonnement avec des données reproductibles. Cela reste un environnement de démonstration universitaire : aucune carte complète ni donnée personnelle réelle. Le commentaire d'en-tête de `seed.sql` vise actuellement le développement ; son utilisation en production nécessite cet arbitrage explicite.
+**Décision du 27/10/2026 : le jeu de démonstration est chargé en production.** La soutenance a lieu sur la production et doit montrer filtres, historique, graphiques, impayés et cloisonnement avec des données reproductibles. Cela reste un environnement de démonstration universitaire : aucune carte complète ni donnée personnelle réelle. Le commentaire d'en-tête de `seed.sql` vise le développement ; son usage en production est assumé par cette décision.
 
-Conditions : contrôler les données, réserver les accès de connexion à l'équipe et au correcteur, employer des mots de passe propres à la production et tester les restrictions. Les hashes actuels du seed ne garantissent pas cette indépendance : leur réutilisation doit être examinée avant chargement. Si un renouvellement est nécessaire, faire préparer et valider un script séparé avec hashes uniquement, sans mot de passe en clair, dans une tâche dédiée. Ne pas modifier à la volée le seed approuvé.
+Conditions : contrôler les données, réserver les accès de connexion à l'équipe et au correcteur, employer des mots de passe propres à la production et tester les restrictions. Les empreintes de mots de passe du seed ne sont pas propres à la production : après le chargement du seed, un script séparé remplace les mots de passe des six comptes par des empreintes générées localement, sans mot de passe en clair dans le dépôt. Ce script n'est pas versionné et le seed reste inchangé.
 
 La période du jeu actuel couvre novembre 2025 à octobre 2026. À la soutenance du 30/11/2026, choisir explicitement cette période dans les filtres. Si les critères imposent une fenêtre glissante incluant novembre 2026, faire préparer un nouveau jeu validé ; ne pas annoncer que le jeu actuel couvre ce mois.
 
-Si le responsable technique refuse les données de démonstration, appliquer seulement le schéma selon le plan validé, sans seed. Une base vide ne contient aucun compte : les connexions et la démonstration fonctionnelle restent bloquées jusqu'à la validation d'un autre jeu fictif, incluant les profils et comptes nécessaires.
+Sans jeu de démonstration, appliquer seulement le schéma, sans seed. Une base vide ne contient aucun compte : les connexions et la démonstration fonctionnelle restent bloquées jusqu'à la validation d'un autre jeu fictif, incluant les profils et comptes nécessaires.
 
 ## 2. Sauvegarde et identification avant tout changement
 
-1. Faire approuver le plan : cible de production, version des trois scripts, chargement ou non du seed, sauvegarde, contrôles et retour arrière. Relever le commit des scripts et leurs empreintes locales avec `Get-FileHash database/schema.sql, database/seed.sql, database/rollback.sql -Algorithm SHA256`.
+1. Fixer le plan : cible de production, version des trois scripts, chargement ou non du seed, sauvegarde, contrôles et retour arrière. Relever le commit des scripts et leurs empreintes locales avec `Get-FileHash database/schema.sql, database/seed.sql, database/rollback.sql -Algorithm SHA256`.
 2. Dans la console Neon, ouvrir le seul projet concerné, puis sa branche de production et le SQL Editor. Vérifier les sélecteurs à chaque nouveau passage dans l'éditeur. Une identité SQL seule ne prouve pas la branche : deux branches peuvent partager les mêmes noms de base et de rôle.
-3. Avant modification, Karlos crée une sauvegarde restaurable, après validation : dans **Branches / Create branch**, sélectionner la branche de production comme source, à l'état courant, et donner un nom explicite tel que `sauvegarde-production-2026-10-27`. Ne pas choisir `dev` et ne pas réinitialiser une branche existante. Relever l'identifiant de sauvegarde et l'heure. Cette branche de sécurité temporaire doit être autorisée dans le plan ; elle n'ajoute pas un nouvel environnement applicatif.
+3. Avant toute modification d'une base contenant des données, créer une sauvegarde restaurable : dans **Branches / Create branch**, sélectionner la branche de production comme source, à l'état courant, et donner un nom explicite tel que `sauvegarde-production-2026-10-27`. Ne pas choisir `dev` et ne pas réinitialiser une branche existante. Relever l'identifiant de sauvegarde et l'heure. Cette branche de sécurité est temporaire ; elle n'ajoute pas un nouvel environnement applicatif. Pour une base vide, comme lors de l'initialisation du 27/10, cette étape n'a pas d'objet.
 4. Vérifier que cette branche apparaît et que son inventaire correspond à la production avant modification. Noter le chemin de restauration à la section 6. Si le quota de branches empêche cette sauvegarde ou si sa restauration n'est pas maîtrisée, arrêter avant toute écriture et faire valider une autre sauvegarde. Ne pas supprimer une branche existante pour libérer une place.
 
 Le plan Free impose des quotas partagés et une fenêtre de restauration limitée ; ne pas supposer qu'un historique automatique remplace une sauvegarde durable. [Plans Neon](https://neon.com/docs/introduction/plans), [stratégies de sauvegarde](https://neon.com/docs/postgres/backup-restore/backups), [branches Neon](https://neon.com/docs/introduction/branching).
@@ -29,7 +29,7 @@ Capture attendue : projet, branche cible, région, base et sauvegarde, sans ongl
 
 ## 3. Contrôles avant application
 
-Dans le SQL Editor de production, Karlos exécute cette lecture :
+Dans le SQL Editor de production, exécuter cette lecture :
 
 ```sql
 -- L'inventaire évite d'appliquer un schéma initial sur une base déjà utilisée.
@@ -43,7 +43,7 @@ FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 ```
 
-Attendu pour cette initialisation : zéro table. Capturer l'inventaire et le nombre avant application. Si une seule table existe, arrêter pour analyse par le responsable technique. Ne pas tenter de rendre les scripts rejouables avec des suppressions. Si les sept tables existent déjà, les comptages de la section suivante peuvent aider au diagnostic, mais cela n'autorise pas à relancer le schéma ou le seed.
+Attendu pour cette initialisation : zéro table. Capturer l'inventaire et le nombre avant application. Si une seule table existe, arrêter et analyser avant toute écriture. Ne pas tenter de rendre les scripts rejouables avec des suppressions. Si les sept tables existent déjà, les comptages de la section suivante peuvent aider au diagnostic, mais cela n'autorise pas à relancer le schéma ou le seed.
 
 ## 4. Appliquer schema.sql puis contrôler
 
@@ -113,32 +113,36 @@ SELECT MIN(date_vente) AS premiere_vente, MAX(date_vente) AS derniere_vente
 FROM transactions;
 ```
 
-Attendus : 1 compte administrateur, 1 Product Owner, 4 commerçants ; zéro compte incohérent ; 16 transactions impayées ; zéro remise incohérente. Contrôler les dates réelles retournées et régler la démonstration sur la période du jeu. Ces lectures ne démontrent pas le cloisonnement applicatif : effectuer aussi la recette croisée décrite dans [deploiement.md](deploiement.md).
+Attendus : 1 compte administrateur, 1 Product Owner, 4 commerçants ; zéro compte incohérent ; 16 transactions impayées ; zéro remise incohérente. Les comptages, la répartition des comptes par profil, l'absence de compte incohérent et l'absence de remise incohérente ont été constatés conformes le 27/10/2026.
 
-Conserver les captures des nombres et résultats, sans compte de connexion. Une divergence impose un arrêt et une remontée au responsable technique. Ne pas ouvrir le site au public avant les contrôles de session et d'autorisation.
+Remplacer ensuite les mots de passe des six comptes avec le script de production (empreintes générées localement, non versionné). Sa dernière requête affiche les six identifiants avec `tentatives_echouees` à 0, sans aucun mot de passe. Contrôler les dates réelles retournées et régler la démonstration sur la période du jeu. Ces lectures ne démontrent pas le cloisonnement applicatif : effectuer aussi la recette croisée décrite dans [deploiement.md](deploiement.md).
+
+Conserver les captures des nombres et résultats, sans compte de connexion. Une divergence impose un arrêt et une analyse avant la suite. Ne pas ouvrir le site au public avant les contrôles de session et d'autorisation.
 
 ## 6. Retour arrière et restauration
 
 ### Transaction non validée
 
-Si la transaction est encore ouverte dans la même session, Karlos l'annule avec `ROLLBACK;`. Contrôler ensuite l'inventaire et les comptages. Un échec du seed ne supprime pas le schéma validé auparavant. Les valeurs de séquences peuvent avoir avancé malgré l'annulation ; ne pas les corriger sans un diagnostic et un script validés.
+Si la transaction est encore ouverte dans la même session, l'annuler avec `ROLLBACK;`. Contrôler ensuite l'inventaire et les comptages. Un échec du seed ne supprime pas le schéma validé auparavant. Les valeurs de séquences peuvent avoir avancé malgré l'annulation ; ne pas les corriger sans un diagnostic et un script validés.
 
 ### Initialisation validée à annuler avec rollback.sql
 
-Uniquement après validation spécifique du responsable technique et de Karlos, sauvegarde confirmée et absence d'usage concurrent :
+Uniquement après avoir confirmé la cible, disposé d'une sauvegarde et vérifié l'absence d'usage concurrent :
 
 1. Mettre l'application hors utilisation selon le plan validé, relever le SHA actif et confirmer de nouveau la branche de production.
 2. Relever l'inventaire et les comptages avant suppression. Confirmer que les sept tables appartiennent bien à cette initialisation ; si d'autres objets en dépendent ou si des données ont été ajoutées depuis, arrêter.
 3. Copier le contenu complet de `database/rollback.sql`, entouré de `BEGIN;` et `COMMIT;`, dans une seule sélection du SQL Editor. Il supprime, dans cet ordre, `annonces_tresorerie`, `transactions`, `remises`, `motifs_impayes`, `utilisateurs`, `entreprises`, `profils`. Il ne faut pas ajouter `CASCADE` en cas d'erreur.
-4. Karlos relit et exécute ce bloc destructif après confirmation de la cible. Les lignes supprimées ne sont récupérables que via la sauvegarde. Refaire le contrôle de la section 3 : zéro table publique si la base était initialement vide, puis vérifier l'absence des sept relations.
+4. Relire puis exécuter ce bloc destructif après confirmation de la cible. Les lignes supprimées ne sont récupérables que via la sauvegarde. Refaire le contrôle de la section 3 : zéro table publique si la base était initialement vide, puis vérifier l'absence des sept relations.
 5. Ne relancer les scripts d'initialisation qu'après une nouvelle validation. `/api/health` peut rester `ok` sur une base vide, puisqu'il ne teste que `SELECT 1` ; la restauration est prouvée par les contrôles SQL et la recette applicative.
 
 ### Restaurer l'état sauvegardé
 
-Si l'objectif est de retrouver un état antérieur contenant des données, `rollback.sql` est insuffisant. La branche de sauvegarde conserve l'état avant opération. Karlos prépare avec le responsable technique une restauration depuis cette branche vers la production, en vérifiant dans la console l'option de restauration et les conséquences sur les branches enfants. Confirmer la cible, le point sauvegardé, les endpoints et les connexions avant toute validation. Ne pas réinitialiser `dev` ni changer la branche de production par défaut pour improviser un secours.
+Si l'objectif est de retrouver un état antérieur contenant des données, `rollback.sql` est insuffisant. La branche de sauvegarde conserve l'état avant opération. Préparer une restauration depuis cette branche vers la production, en vérifiant dans la console l'option de restauration et les conséquences sur les branches enfants. Confirmer la cible, le point sauvegardé, les endpoints et les connexions avant toute validation. Ne pas réinitialiser `dev` ni changer la branche de production par défaut pour improviser un secours.
 
 Après restauration : comparer l'inventaire et les comptages à ceux de la sauvegarde, vérifier la chaîne utilisée par Production en privé, redéployer seulement si sa configuration a changé, puis rejouer santé et parcours. Conserver la sauvegarde jusqu'à validation de la recette ; sa suppression ultérieure fera l'objet d'une décision distincte. [Sauvegarde et restauration Neon](https://neon.com/docs/postgres/backup-restore/backups).
 
-## 7. Points restant à valider
+## 7. État au 28/10/2026
 
-Le responsable technique confirme le jeu fictif en production, les comptes et mots de passe distincts, le plan de sauvegarde et la référence de story. Karlos relève le nom réel de la branche de production, l'état initial et les quotas. Aucun de ces points n'autorise une exécution automatique ni une écriture dans le suivi partagé.
+- Production initialisée le 27/10/2026 : schéma, jeu de démonstration et remplacement des mots de passe des six comptes.
+- Contrôles après initialisation et recette en ligne conformes (voir [deploiement.md](deploiement.md), section 7).
+- À surveiller : les quotas du plan Free, partagés entre les branches, et la période du jeu (novembre 2025 à octobre 2026), à choisir dans les filtres lors de la soutenance.
