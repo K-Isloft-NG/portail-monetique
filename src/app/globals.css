@@ -57,7 +57,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .workspace-main { min-width: 0; padding: 44px 56px 56px; }
 .summary { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--color-filet); }
 .summary p { margin-top: 10px; }
-.company-block { padding: 20px 0; border-block: 1px solid var(--color-filet); background: var(--color-blanc); margin-bottom: 24px; }
+.company-block { padding: 20px 24px; border-block: 1px solid var(--color-filet); background: var(--color-blanc); margin-bottom: 24px; }
 .company-block dt, .muted { color: var(--color-encre-douce); font-size: 14px; }
 .company-block dd { margin-top: 6px; }
 .text-link { color: var(--color-petrole); text-decoration: underline; text-underline-offset: 4px; }
@@ -73,6 +73,7 @@ button:disabled { cursor: wait; opacity: .6; }
   .workspace-main { padding: 32px; }
 }
 @media (max-width: 767px) {
+  .company-block { padding-inline: 16px; }
   .login-layout, .workspace { display: block; }
   .login-intro, .login-panel { display: block; padding: 32px 20px; }
   .login-intro { border-right: 0; border-bottom: 1px solid var(--color-filet); }
