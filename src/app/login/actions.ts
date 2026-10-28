@@ -10,7 +10,15 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
     // Une tentative refusée ne doit pas conserver une ancienne session dans ce navigateur.
     await deleteSession();
     const result = await authenticate(formData.get("login"), formData.get("password"));
-    if (!result.ok) return { error: AUTH_ERROR, warning: result.warning };
+    if (!result.ok) {
+      if (result.reason === "blocked") {
+        return {
+          error: `Compte temporairement bloqué. Réessayez dans ${result.minutes} minute${result.minutes === 1 ? "" : "s"}.`,
+          warning: false,
+        };
+      }
+      return { error: AUTH_ERROR, warning: result.reason === "warning" };
+    }
 
     user = result.user;
     await createSession(user);

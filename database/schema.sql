@@ -39,8 +39,8 @@ CREATE TABLE entreprises (
 -- numero_siren est renseigné pour un client et vide pour l'admin
 -- et le Product Owner. Cette règle est contrôlée par l'application
 -- (un CHECK ne peut pas lire la table profils).
--- tentatives_echouees sert au message d'avertissement après deux
--- tentatives infructueuses (story E6-TS5).
+-- tentatives_echouees sert à l'avertissement après deux échecs
+-- et au blocage temporaire à la troisième tentative (story E6-TS5).
 -- ------------------------------------------------------------
 CREATE TABLE utilisateurs (
     id                   SERIAL PRIMARY KEY,
@@ -50,6 +50,8 @@ CREATE TABLE utilisateurs (
     numero_siren         CHAR(9) REFERENCES entreprises (numero_siren),
     tentatives_echouees  SMALLINT NOT NULL DEFAULT 0
                          CHECK (tentatives_echouees >= 0),
+    -- Fin du blocage temporaire ; NULL si aucun blocage.
+    bloque_jusqua        TIMESTAMPTZ DEFAULT NULL,
     est_actif            BOOLEAN NOT NULL DEFAULT TRUE,
     date_creation        TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -72,8 +74,8 @@ CREATE TABLE motifs_impayes (
 -- Les montants sont stockés positifs ; le signe est porté par la
 -- colonne sens ('+' ou '-'), comme dans les tableaux attendus.
 -- Montant en NUMERIC(7,2) : cinq chiffres avant la virgule et deux
--- après. À confirmer auprès du Product Owner (num(5;2) peut aussi
--- se lire "cinq chiffres au total").
+-- après : le Product Owner confirme sept chiffres dont deux décimales,
+-- soit un maximum de 99 999,99.
 -- ------------------------------------------------------------
 CREATE TABLE remises (
     id               SERIAL PRIMARY KEY,

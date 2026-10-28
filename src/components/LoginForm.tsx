@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import { loginAction } from "@/app/login/actions";
 import type { LoginState } from "@/lib/auth";
 
+export const AUTH_WARNING = "ATTENTION : C'est votre dernier essai… Au prochain échec, le compte sera bloqué pendant 15 minutes.";
+
 const INITIAL_STATE: LoginState = {};
 
 export default function LoginForm() {
@@ -15,7 +17,7 @@ export default function LoginForm() {
       {state.error && (
         <div id="login-error" role="alert" className="login-error">
           <p className="font-semibold">{state.error}</p>
-          {state.warning && <p>Attention : la prochaine tentative sera la dernière.</p>}
+          {state.warning && <p>{AUTH_WARNING}</p>}
         </div>
       )}
       <div>
