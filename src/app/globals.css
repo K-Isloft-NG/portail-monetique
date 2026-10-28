@@ -28,10 +28,13 @@ p { max-width: 75ch; }
 .button-secondary:hover { background: var(--color-petrole-clair); }
 button:disabled { cursor: wait; opacity: .6; }
 .login-layout { display: grid; grid-template-columns: minmax(0, 1fr) 520px; min-height: 100dvh; }
-.login-intro { padding: 96px 80px; border-right: 1px solid var(--color-filet); }
+.login-intro { display: flex; align-items: center; justify-content: center; padding: 32px 80px; border-right: 1px solid var(--color-filet); }
+/* Centrer le bloc entier garde le titre, le filet et l'aide sur le même axe. */
+.login-intro > div { width: 100%; max-width: 420px; }
 .login-intro h1 { max-width: 420px; padding-bottom: 14px; border-bottom: 3px double var(--color-encre); }
 .login-intro p { max-width: 420px; margin-top: 14px; color: var(--color-encre-douce); line-height: 1.6; }
-.login-panel { padding: 96px 64px; background: var(--color-blanc); }
+.login-panel { display: flex; align-items: center; justify-content: center; padding: 32px 64px; background: var(--color-blanc); }
+.login-panel > div { width: 100%; max-width: 360px; }
 .login-form { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; font-size: 14px; }
 .login-form label { display: block; margin-bottom: 6px; font-weight: 500; }
 .login-form input { width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid var(--color-contour-champ); border-radius: 4px; background: var(--color-blanc); }
@@ -65,13 +68,13 @@ button:disabled { cursor: wait; opacity: .6; }
 .register tfoot { border-top: 3px double var(--color-encre); font-weight: 600; }
 .cell-label { display: none; }
 @media (max-width: 1023px) {
-  .login-intro { padding: 64px 40px; }
-  .login-panel { padding: 64px 40px; }
+  .login-intro { padding: 32px 40px; }
+  .login-panel { padding: 32px 40px; }
   .workspace-main { padding: 32px; }
 }
 @media (max-width: 767px) {
   .login-layout, .workspace { display: block; }
-  .login-intro, .login-panel { padding: 32px 20px; }
+  .login-intro, .login-panel { display: block; padding: 32px 20px; }
   .login-intro { border-right: 0; border-bottom: 1px solid var(--color-filet); }
   .sidebar { padding: 8px 20px; border-right: 0; border-bottom: 1px solid var(--color-filet); }
   .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
