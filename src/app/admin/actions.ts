@@ -8,6 +8,7 @@ import { AccountError, AccountTechnicalError, createAccount, disableAccount, par
 export async function createAccountAction(_previous: CreateAccountState, form: FormData): Promise<CreateAccountState> {
   // Une action est accessible sans son formulaire : contrôler le profil à chaque appel.
   const session = await requireProfile("admin");
+  if (!(form instanceof FormData)) return { error: "Formulaire invalide. Réessayez." };
   function field(name: string) {
     const values = form.getAll(name);
     return values.length === 1 && typeof values[0] === "string" ? values[0] : "";
@@ -17,7 +18,8 @@ export async function createAccountAction(_previous: CreateAccountState, form: F
   if (Object.keys(errors).length) return { values, errors, error: "Corrigez les champs indiqués." };
   try {
     const created = await createAccount(session.id, values);
-    revalidatePath("/admin");
+    // Le compte existe : une actualisation ratée ne doit pas faire perdre son mot de passe.
+    try { revalidatePath("/admin"); } catch { /* La liste sera relue au prochain chargement. */ }
     return { password: created.password, createdLogin: values.login };
   } catch (error) {
     if (error instanceof AccountError) {
@@ -31,7 +33,7 @@ export async function createAccountAction(_previous: CreateAccountState, form: F
 export async function disableAccountAction(form: FormData) {
   // Ne pas faire confiance au fait que le formulaire était visible à un administrateur.
   const session = await requireProfile("admin");
-  const id = form.getAll("id").length === 1 ? parseAccountId(form.get("id")) : null;
+  const id = form instanceof FormData && form.getAll("id").length === 1 ? parseAccountId(form.get("id")) : null;
   if (!id) redirect("/admin?message=unavailable");
   let message = "disabled";
   try { await disableAccount(session.id, id); revalidatePath("/admin"); }
@@ -42,7 +44,7 @@ export async function disableAccountAction(form: FormData) {
 export async function unlockAccountAction(form: FormData) {
   // La garde est relue à chaque POST, y compris pour un bouton ancien ou forgé.
   const session = await requireProfile("admin");
-  const id = form.getAll("id").length === 1 ? parseAccountId(form.get("id")) : null;
+  const id = form instanceof FormData && form.getAll("id").length === 1 ? parseAccountId(form.get("id")) : null;
   if (!id) redirect("/admin?message=unavailable");
   let message = "unlocked";
   try { await unlockAccount(session.id, id); revalidatePath("/admin"); }

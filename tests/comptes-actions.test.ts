@@ -65,6 +65,34 @@ describe("action de création d'un compte", () => {
     expect(params).toHaveLength(5);
     expect(sql).toContain("e.numero_siren, NOW(), $1");
   });
+  it("conserve le mot de passe créé si l'actualisation de la liste échoue", async () => {
+    mocks.revalidate.mockImplementation(() => { throw new Error("Actualisation indisponible."); });
+    const result = await createAccountAction({}, form());
+    expect(Boolean(result.password)).toBe(true);
+    expect(result.createdLogin).toBe("compte-test-client");
+    expect(result.error).toBeUndefined();
+    expect(mocks.query).toHaveBeenCalledTimes(2);
+  });
+  it.each([null, {}, "id=7"])("refuse un argument de création hors formulaire (%j)", async value => {
+    const result = await createAccountAction({}, value as unknown as FormData);
+    expect(result.error).toBe("Formulaire invalide. Réessayez.");
+    expect(result.password === undefined).toBe(true);
+    expect(mocks.query).toHaveBeenCalledOnce();
+    expect(mocks.query.mock.calls[0][0]).toMatch(/^SELECT/);
+  });
+  for (const action of [disableAccountAction, unlockAccountAction]) {
+    it("refuse un identifiant répété sans écriture", async () => {
+      const data = new FormData(); data.append("id", "7"); data.append("id", "8");
+      await expect(action(data)).rejects.toThrow("REDIRECT:/admin?message=unavailable");
+      expect(mocks.query).toHaveBeenCalledOnce();
+      expect(mocks.query.mock.calls[0][0]).toMatch(/^SELECT/);
+    });
+    it.each([null, {}, "id=7"])("refuse un argument d'action hors formulaire (%j)", async value => {
+      await expect(action(value as unknown as FormData)).rejects.toThrow("REDIRECT:/admin?message=unavailable");
+      expect(mocks.query).toHaveBeenCalledOnce();
+      expect(mocks.query.mock.calls[0][0]).toMatch(/^SELECT/);
+    });
+  }
   it.each([null, "29/10/2026"])("affiche la date de l'accord ou Non renseigné (%s)", async agreement => {
     mocks.query.mockResolvedValueOnce([{ ...ADMIN, est_actif: true }]).mockResolvedValueOnce([
       { id: 7, login: "compte-test-client", profile: "client", numero_siren: "999999990", raison_sociale: "Entreprise fictive", est_actif: false, is_blocked: false, state: "Désactivé", accord_po_le: agreement },
@@ -72,6 +100,37 @@ describe("action de création d'un compte", () => {
     const html = renderToStaticMarkup(await AdminPage({ searchParams: Promise.resolve({}) }));
     expect(html).toContain("Accord du PO");
     expect(html).toContain(agreement ?? "Non renseigné");
+  });
+  it("limite les actions rendues à l'état et au profil de chaque compte", async () => {
+    const base = { numero_siren: "999999990", raison_sociale: "Entreprise fictive", est_actif: true, is_blocked: false, state: "Actif", accord_po_le: null };
+    // Un résultat portant l'id de session couvre aussi la protection défensive du rendu.
+    const accounts = [
+      { ...base, id: ADMIN.id, login: "soi-meme", profile: "client", is_blocked: true, state: "Bloqué" },
+      { ...base, id: 7, login: "inactif", profile: "client", est_actif: false, state: "Désactivé" },
+      { ...base, id: 8, login: "client-bloque", profile: "client", is_blocked: true, state: "Bloqué" },
+      { ...base, id: 9, login: "client-actif", profile: "client", accord_po_le: "29/10/2026" },
+      { ...base, id: 10, login: "po-bloque", profile: "po", is_blocked: true, state: "Bloqué" },
+      { ...base, id: 11, login: "po-actif", profile: "po" },
+    ];
+    mocks.query.mockResolvedValueOnce([{ ...ADMIN, est_actif: true }]).mockResolvedValueOnce(accounts);
+    const html = renderToStaticMarkup(await AdminPage({ searchParams: Promise.resolve({}) }));
+    const rows = html.match(/<tr>[\s\S]*?<\/tr>/g) ?? [];
+    const row = (login: string) => rows.find(text => text.includes(">" + login + "<")) ?? "";
+    for (const login of ["soi-meme", "inactif", "po-actif"]) {
+      expect(row(login)).toContain("Sans action");
+      expect(row(login)).not.toMatch(/<button|<a /);
+    }
+    for (const login of ["client-bloque", "po-bloque"]) {
+      expect(row(login)).toContain("Débloquer");
+      expect(row(login)).not.toContain("Désactiver");
+    }
+    expect(row("client-actif")).toContain('href="/admin/desactiver/9"');
+    expect(row("client-actif")).not.toContain("Débloquer");
+    expect(row("client-actif")).toContain("29/10/2026");
+    expect(row("inactif")).toContain("Non renseigné");
+    expect(html).toContain("Accord du PO");
+    expect(rows.join("")).not.toContain(">Administrateur<");
+    expect(mocks.query.mock.calls[1][0]).toContain("WHERE p.libelle IN ('client', 'po')");
   });
   it.each([disableAccountAction, unlockAccountAction])("refuse sa propre cible sans écriture", async action => {
     const data = new FormData(); data.set("id", "1");

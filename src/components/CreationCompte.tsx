@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { createAccountAction } from "@/app/admin/actions";
 import type { AccountField, CreateAccountState } from "@/lib/comptes";
 
@@ -15,7 +16,8 @@ export default function CreationCompte() {
   }
   const [state, action, pending] = useActionState(submit, {});
   useEffect(() => {
-    const hide = () => setVisible(false);
+    // Retirer le bloc avant que le navigateur puisse figer la page dans son historique.
+    const hide = () => flushSync(() => setVisible(false));
     window.addEventListener("pagehide", hide);
     window.addEventListener("popstate", hide);
     return () => { window.removeEventListener("pagehide", hide); window.removeEventListener("popstate", hide); };

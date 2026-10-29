@@ -23,6 +23,8 @@ export class AccountError extends Error {
 export class AccountTechnicalError extends Error {
   constructor() { super("Gestion des comptes indisponible. Réessayez plus tard."); }
 }
+// Une liste fermée évite les noms invisibles, inversés ou imitant l'alphabet latin.
+const COMPANY_NAME_PATTERN = /^[\p{Script=Latin}0-9 '’&.,()\/-]+$/u;
 const ADMIN_MESSAGES = {
   disabled: { text: "Compte désactivé. Son historique est conservé.", error: false },
   unlocked: { text: "Compte débloqué.", error: false },
@@ -36,8 +38,9 @@ export function getAdminMessage(value: unknown) {
 export function validateAccount(values: AccountValues): AccountErrors {
   const errors: AccountErrors = {};
   if (!/^[0-9]{9}$/.test(values.siren)) errors.siren = "Saisissez exactement 9 chiffres pour le SIREN.";
-  const name = values.companyName.trim();
-  if (Array.from(name).length < 1 || Array.from(name).length > 20 || /\p{Cc}/u.test(values.companyName)) errors.companyName = "Saisissez une raison sociale de 1 à 20 caractères, sans caractère de contrôle.";
+  // Composer les accents avant de compter ; trim ne doit pas masquer un contrôle en bord.
+  const name = values.companyName.normalize("NFC").trim();
+  if (Array.from(name).length < 1 || Array.from(name).length > 20 || /\p{Cc}/u.test(values.companyName) || !COMPANY_NAME_PATTERN.test(name)) errors.companyName = "Saisissez une raison sociale de 1 à 20 caractères : lettres, chiffres, espaces et ponctuation courante.";
   if (!/^[a-z0-9][a-z0-9._-]{2,49}$/.test(values.login)) errors.login = "Utilisez 3 à 50 minuscules, chiffres, points, tirets ou tirets bas, avec une lettre ou un chiffre au début.";
   if (values.agreement !== true) errors.agreement = "Cochez l'accord du Product Owner.";
   return errors;
@@ -118,7 +121,7 @@ export async function createAccount(actorId: number, values: AccountValues) {
      INSERT INTO utilisateurs (login, mot_de_passe_hash, profil_id, numero_siren, accord_po_le, cree_par)
      SELECT $4, $5, p.id, e.numero_siren, NOW(), $1 FROM new_company e CROSS JOIN client_profile p
      RETURNING id`,
-    [actorId, values.siren, values.companyName.trim(), values.login, passwordHash],
+    [actorId, values.siren, values.companyName.normalize("NFC").trim(), values.login, passwordHash],
   );
   if (!rows[0]) throw new AccountError("unavailable");
   return { id: rows[0].id as number, password: initial };
