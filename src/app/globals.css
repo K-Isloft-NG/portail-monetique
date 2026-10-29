@@ -50,10 +50,13 @@ button:disabled { cursor: wait; opacity: .6; }
 .mobile-menu { display: none; }
 .sidebar-content { display: flex; flex: 1; flex-direction: column; }
 .sidebar nav a { display: block; padding: 9px 8px; border-radius: 4px; background: var(--color-petrole-clair); color: var(--color-petrole); font-size: 14px; font-weight: 600; }
-.identity { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--color-filet); font-size: 13px; overflow-wrap: anywhere; }
+.identity { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--color-filet); font-size: 13px; text-align: center; text-wrap: balance; overflow-wrap: normal; }
 .identity p + p { color: var(--color-encre-douce); }
 .identity form { margin-top: 10px; }
 .identity button { width: 100%; padding-inline: 4px; font-size: 13px; }
+/* Utiliser aussi le retrait latéral de l'identité évite des lignes trop courtes. */
+.identity .logout-help { width: calc(100% + 16px); margin: 14px -8px 0; padding-inline: 2px; color: var(--color-encre-douce); font-size: 12px; line-height: 1.5; text-align: center; text-wrap: balance; overflow-wrap: normal; }
+.identity .logout-help + [role="alert"] { margin-top: 12px; }
 .workspace-main { min-width: 0; padding: 44px 56px 56px; }
 .summary { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--color-filet); }
 .summary p { margin-top: 10px; }
