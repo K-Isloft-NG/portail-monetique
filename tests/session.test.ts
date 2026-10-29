@@ -9,11 +9,12 @@ import {
 const store = vi.hoisted(() => ({ get: vi.fn(), set: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: async () => store }));
 
+const RECORD = () => { const issuedAt = Math.floor(Date.now() / 1000); return { sessionId: "12345678-1234-4123-8123-123456789abc", issuedAt, expiresAt: issuedAt + SESSION_DURATION }; };
 const CLIENT: SessionData = { id: 1, login: "compte-test", profile: "client", siren: "100000001" };
 
 async function signedPayload(changes: Record<string, unknown>, algorithm = "HS256") {
   const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({ ...CLIENT, iat: now, exp: now + SESSION_DURATION, ...changes })
+  return new SignJWT({ ...CLIENT, sessionId: RECORD().sessionId, iat: now, exp: now + SESSION_DURATION, ...changes })
     .setProtectedHeader({ alg: algorithm })
     .sign(new TextEncoder().encode(process.env.SESSION_SECRET));
 }
@@ -27,26 +28,26 @@ describe("session", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("signe et relit une session limitée à huit heures", async () => {
-    const token = await signSession(CLIENT);
-    expect(await verifySession(token)).toEqual(CLIENT);
+    const token = await signSession(CLIENT, RECORD());
+    expect(await verifySession(token)).toEqual({ ...CLIENT, sessionId: RECORD().sessionId });
     const payload = decodeJwt(token);
     expect(payload.exp! - payload.iat!).toBe(SESSION_DURATION);
   });
 
   it("écarte les propriétés qui ne font pas partie de la session", async () => {
     const user = { ...CLIENT, mot_de_passe_hash: randomBytes(32).toString("hex") };
-    const payload = decodeJwt(await signSession(user));
-    expect(Object.keys(payload).sort()).toEqual(["exp", "iat", "id", "login", "profile", "siren"]);
+    const payload = decodeJwt(await signSession(user, RECORD()));
+    expect(Object.keys(payload).sort()).toEqual(["exp", "iat", "id", "login", "profile", "sessionId", "siren"]);
   });
 
   it("refuse une signature altérée", async () => {
-    const parts = (await signSession(CLIENT)).split(".");
+    const parts = (await signSession(CLIENT, RECORD())).split(".");
     parts[2] = (parts[2][0] === "A" ? "B" : "A") + parts[2].slice(1);
     expect(await verifySession(parts.join("."))).toBeNull();
   });
 
   it("refuse une signature produite avec une autre clé", async () => {
-    const token = await signSession(CLIENT);
+    const token = await signSession(CLIENT, RECORD());
     vi.stubEnv("SESSION_SECRET", randomBytes(32).toString("hex"));
     expect(await verifySession(token)).toBeNull();
   });
@@ -61,7 +62,7 @@ describe("session", () => {
   });
 
   it.each([
-    { profile: "autre" }, { siren: "123" }, { profile: "admin", siren: "100000001" },
+    { sessionId: undefined }, { sessionId: "invalide" }, { profile: "autre" }, { siren: "123" }, { profile: "admin", siren: "100000001" },
     { id: 0 }, { login: "" }, { exp: undefined }, { iat: undefined },
     { exp: Math.floor(Date.now() / 1000) + 60 },
   ])("refuse un contenu incohérent (%j)", async (changes) => {
@@ -82,23 +83,23 @@ describe("session", () => {
 
   it.each([undefined, "", "court"])("refuse une clé absente ou insuffisante sans l'afficher", async (key) => {
     vi.stubEnv("SESSION_SECRET", key);
-    await expect(signSession(CLIENT)).rejects.toThrow("SESSION_SECRET doit contenir au moins 32 octets.");
+    await expect(signSession(CLIENT, RECORD())).rejects.toThrow("SESSION_SECRET doit contenir au moins 32 octets.");
     expect(store.set).not.toHaveBeenCalled();
   });
 
   it.each(["development", "production"])("configure le cookie en %s", async (environment) => {
     vi.stubEnv("NODE_ENV", environment);
-    await createSession(CLIENT);
+    await createSession(CLIENT, RECORD());
     const options = store.set.mock.calls[0][2];
     expect(options).toEqual({ httpOnly: true, secure: environment === "production", sameSite: "lax", path: "/", maxAge: SESSION_DURATION });
     expect(store.set.mock.calls[0][0]).toBe(SESSION_COOKIE_NAME);
     // L'assertion porte sur le contenu vérifié, sans afficher le jeton.
-    expect(await verifySession(store.set.mock.calls[0][1])).toEqual(CLIENT);
+    expect(await verifySession(store.set.mock.calls[0][1])).toEqual({ ...CLIENT, sessionId: RECORD().sessionId });
   });
 
   it("lit uniquement le cookie de session attendu", async () => {
-    store.get.mockReturnValue({ value: await signSession(CLIENT) });
-    expect(await readSession()).toEqual(CLIENT);
+    store.get.mockReturnValue({ value: await signSession(CLIENT, RECORD()) });
+    expect(await readSession()).toEqual({ ...CLIENT, sessionId: RECORD().sessionId });
     expect(store.get).toHaveBeenCalledWith(SESSION_COOKIE_NAME);
   });
 

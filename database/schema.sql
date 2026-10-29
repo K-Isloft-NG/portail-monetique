@@ -59,6 +59,24 @@ CREATE TABLE utilisateurs (
     date_creation        TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- État révocable des connexions ; aucun cookie ni secret n’est stocké.
+CREATE TABLE public.sessions (
+    id                  UUID PRIMARY KEY,
+    utilisateur_id      INTEGER NOT NULL
+                        CONSTRAINT sessions_utilisateur_id_fkey
+                        REFERENCES public.utilisateurs (id) ON DELETE CASCADE,
+    date_creation       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    date_expiration     TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '8 hours'),
+    date_revocation     TIMESTAMPTZ DEFAULT NULL,
+    CONSTRAINT sessions_revocation_check
+        CHECK (date_revocation IS NULL OR date_revocation >= date_creation)
+);
+
+CREATE INDEX idx_sessions_utilisateur
+    ON public.sessions (utilisateur_id);
+CREATE INDEX idx_sessions_expiration
+    ON public.sessions (date_expiration, id);
+
 -- ------------------------------------------------------------
 -- motifs_impayes : table des huit motifs codifiés
 -- Le Product Owner autorise plus de 20 caractères depuis le 28/10/2026.

@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 vi.mock("@/components/LogoutButton", () => ({ default: () => null }));
-const PO = { id: 2, login: "compte-test", profile: "po", siren: null };
+const PO = { sessionId: "12345678-1234-4123-8123-123456789abc", id: 2, login: "compte-test", profile: "po", siren: null };
 const COMPANY = { numero_siren: "100000002", raison_sociale: "Entreprise fictive", est_active: true };
 const companyPage = (siren: string, extra = {}) => PoCompanyPage({ params: Promise.resolve({ siren }), searchParams: Promise.resolve(extra) });
 

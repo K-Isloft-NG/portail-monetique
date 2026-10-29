@@ -9,6 +9,16 @@ export type SessionData = Account & (
   | { profile: "admin" | "po"; siren: null }
 );
 
+export type VerifiedSession = SessionData & { sessionId: string };
+export type SessionRecord = { sessionId: string; issuedAt: number; expiresAt: number };
+export function isSessionId(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+export function isSessionRecord(value: SessionRecord): boolean {
+  return isSessionId(value.sessionId) && Number.isSafeInteger(value.issuedAt) &&
+    Number.isSafeInteger(value.expiresAt) && value.expiresAt - value.issuedAt === SESSION_DURATION;
+}
+
 export const SESSION_COOKIE_NAME = "portail_session";
 export const SESSION_DURATION = 8 * 60 * 60;
 export const PROFILE_PATHS: Record<Profile, string> = {
@@ -42,18 +52,18 @@ function getSessionKey() {
   return key;
 }
 
-export async function signSession(user: SessionData) {
-  if (!isSessionData(user)) throw new Error("Contenu de session invalide.");
+export async function signSession(user: SessionData, session: SessionRecord) {
+  if (!isSessionData(user) || !isSessionRecord(session)) throw new Error("Contenu de session invalide.");
 
   // Une liste explicite empêche d'ajouter par erreur une empreinte ou un secret.
-  return new SignJWT({ id: user.id, login: user.login, profile: user.profile, siren: user.siren })
+  return new SignJWT({ id: user.id, login: user.login, profile: user.profile, siren: user.siren, sessionId: session.sessionId })
     .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION}s`)
+    .setIssuedAt(session.issuedAt)
+    .setExpirationTime(session.expiresAt)
     .sign(getSessionKey());
 }
 
-export async function verifySession(token?: string): Promise<SessionData | null> {
+export async function verifySession(token?: string): Promise<VerifiedSession | null> {
   if (!token) return null;
   const key = getSessionKey();
 
@@ -63,15 +73,15 @@ export async function verifySession(token?: string): Promise<SessionData | null>
       requiredClaims: ["iat", "exp"],
     });
     const now = Math.floor(Date.now() / 1000);
-    const { iat, exp } = payload;
+    const { iat, exp, sessionId } = payload;
     if (
-      !isSessionData(payload) ||
+      !isSessionData(payload) || !isSessionId(sessionId) ||
       typeof iat !== "number" || typeof exp !== "number" ||
       !Number.isSafeInteger(iat) || !Number.isSafeInteger(exp) ||
       iat > now || exp - iat !== SESSION_DURATION
     ) return null;
 
-    return { id: payload.id, login: payload.login, profile: payload.profile, siren: payload.siren } as SessionData;
+    return { id: payload.id, login: payload.login, profile: payload.profile, siren: payload.siren, sessionId } as VerifiedSession;
   } catch {
     // Un jeton invalide n'est jamais repris dans une erreur ou un journal.
     return null;
@@ -93,10 +103,12 @@ export async function readSession() {
   return verifySession(store.get(SESSION_COOKIE_NAME)?.value);
 }
 
-export async function createSession(user: SessionData) {
-  const token = await signSession(user);
+export async function createSession(user: SessionData, session: SessionRecord) {
+  const token = await signSession(user, session);
   const store = await cookies();
-  store.set(SESSION_COOKIE_NAME, token, getCookieOptions());
+  store.set(SESSION_COOKIE_NAME, token, { ...getCookieOptions(),
+    maxAge: Math.max(0, Math.min(SESSION_DURATION, session.expiresAt - Math.floor(Date.now() / 1000))),
+  });
 }
 
 export async function deleteSession() {

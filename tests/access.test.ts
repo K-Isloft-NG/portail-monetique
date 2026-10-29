@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthorizedSiren, getClientCompany, getMerchants, requireProfile } from "@/lib/access";
-import { PROFILE_PATHS, type Profile, type SessionData } from "@/lib/session";
+import { PROFILE_PATHS, type Profile, type VerifiedSession } from "@/lib/session";
 
 const mocks = vi.hoisted(() => ({ query: vi.fn(), readSession: vi.fn() }));
 vi.mock("@/lib/db", () => ({ query: mocks.query }));
@@ -10,10 +10,10 @@ vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
 }));
 
-const CLIENT: SessionData = { id: 1, login: "compte-test", profile: "client", siren: "100000001" };
+const CLIENT: VerifiedSession = { sessionId: "12345678-1234-4123-8123-123456789abc", id: 1, login: "compte-test", profile: "client", siren: "100000001" };
 const PROFILES: Profile[] = ["admin", "po", "client"];
 
-function sessionFor(profile: Profile): SessionData {
+function sessionFor(profile: Profile): VerifiedSession {
   return profile === "client" ? CLIENT : { ...CLIENT, profile, siren: null };
 }
 
@@ -42,7 +42,7 @@ describe("accès", () => {
           await expect(requireProfile(requested)).rejects.toThrow(`REDIRECT:${PROFILE_PATHS[actual]}`);
         }
         expect(mocks.query.mock.calls[0][0]).not.toContain("FROM entreprises");
-        expect(mocks.query.mock.calls[0][1]).toEqual([session.id]);
+        expect(mocks.query.mock.calls[0][1]).toEqual([session.id, session.sessionId]);
       });
     }
   }
