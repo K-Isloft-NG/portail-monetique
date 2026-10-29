@@ -16,10 +16,18 @@ describe("export de trésorerie CSV", () => {
     const csv = buildTreasuryCsv([{ ...ROW, raison_sociale: 'Nom; "cité"\nSuite' }]);
     expect(csv).toContain('"Nom; ""cité""\nSuite"');
   });
-  it.each(["=1+1", "+1+1", "-1+1", "@SOMME(A1)"])("protège le texte %s, jamais le montant négatif", (raison_sociale) => {
+  it.each(["=1+1", "+1+1", "-1+1", "@SOMME(A1)", " =1+1", "\u00a0=1+1", "\t=1+1", " \t@SOMME(A1)", "\tNom"])("protège le texte %j, jamais le montant négatif", (raison_sociale) => {
     const csv = buildTreasuryCsv([{ ...ROW, raison_sociale }]);
     expect(csv).toContain(`;'${raison_sociale};2;EUR;-182,23`);
     expect(csv).not.toContain("'-182,23");
+  });
+  it.each(["\r=1+1", "\rNom", " \r+1"])("protège et encadre un retour chariot (%j)", raison_sociale => {
+    const csv = buildTreasuryCsv([{ ...ROW, raison_sociale }]);
+    expect(csv).toContain(`;"'${raison_sociale}";2;EUR;-182,23`);
+    expect(csv).not.toContain("'-182,23");
+  });
+  it("conserve un espace initial dans un texte sans formule", () => {
+    expect(buildTreasuryCsv([{ ...ROW, raison_sociale: " Nom" }])).toContain("; Nom;2;");
   });
   it("exporte seulement les en-têtes si le résultat est vide", () => expect(buildTreasuryCsv([]).split("\r\n")).toHaveLength(2));
   it("nomme le fichier avec le périmètre et la date de Paris", () => {

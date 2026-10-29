@@ -50,6 +50,19 @@ describe("droits et réponse de l'export de trésorerie", () => {
     expect(response.status).toBe(400);
     expect(mocks.query.mock.calls.every(([sql]) => !sql.includes("FROM annonces_tresorerie"))).toBe(true);
   });
+  it.each(["format=csv&format=pdf", "format=pdf&format=csv"])("garde le CSV quand le format est répété (%s)", async params => {
+    const response = await GET(new Request("http://localhost/export/tresorerie?" + params));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
+    expect(await response.text()).toContain(";100000001;");
+  });
+  it("ramène le tri SIREN du commerçant au tri date par défaut", async () => {
+    const response = await GET(new Request("http://localhost/export/tresorerie?sort=siren&order=desc&siren=100000002"));
+    expect(response.status).toBe(200);
+    const [sql, params] = mocks.query.mock.calls.find(([sql]) => sql.includes("FROM annonces_tresorerie"))!;
+    expect(sql).toContain("ORDER BY a.date_valeur DESC, a.numero_siren ASC");
+    expect(params).toEqual([CLIENT.siren, null]);
+  });
   it("autorise le PO avec un SIREN sélectionné", async () => {
     setup({ ...CLIENT, profile: "po", siren: null });
     const response = await GET(new Request("http://localhost/export/tresorerie?siren=100000002&sort=siren&order=desc"));
