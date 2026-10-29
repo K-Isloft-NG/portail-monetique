@@ -12,7 +12,7 @@ vi.mock("@/lib/db", () => ({ query: mocks.query }));
 vi.mock("@/lib/session", async original => ({ ...await original<typeof import("@/lib/session")>(), readSession: mocks.readSession }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }));
 vi.mock("next/navigation", () => ({ redirect: (p: string) => { throw new Error("REDIRECT:" + p); }, notFound: () => { throw new Error("NOT_FOUND"); } }));
-const ADMIN = { id: 1, login: "compte-test", profile: "admin", siren: null };
+const ADMIN = { sessionId: "12345678-1234-4123-8123-123456789abc", id: 1, login: "compte-test", profile: "admin", siren: null };
 function form(agreement = true) {
   const data = new FormData();
   for (const [k, v] of Object.entries({ siren: "999999990", companyName: "Entreprise fictive", login: "compte-test-client" })) data.set(k, v);

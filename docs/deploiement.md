@@ -138,3 +138,10 @@ Points à retenir pour les contrôles suivants :
 Utiliser le tableau de bord pour rétablir le dernier déploiement de production sain, puis revérifier domaine, HTTPS, santé et accès. Vérifier ensuite le suivi des déploiements automatiques avant la prochaine publication. Pour un premier déploiement sans version saine, suspendre la mise en service et préparer un plan de retrait ; ne rien supprimer par défaut.
 
 Un retour arrière Vercel ne restaure ni le schéma Neon, ni ses données, ni les secrets. La restauration de la base suit la procédure séparée, et toute rotation doit rester cohérente avec le déploiement actif.
+
+
+## Déploiement des sessions révocables
+
+Appliquer la migration 02 sur dev, vérifier table vide, colonnes, clé étrangère et index, puis effectuer la recette à deux navigateurs. Après sauvegarde validée, Karlos applique la même migration en production avant la fusion de develop vers main et le déploiement automatique. Les anciens cookies sans UUID imposent une reconnexion générale. Aucune migration n'est lancée pendant le build.
+
+Conserver de préférence la table et le contrôle SQL lors d'un retour applicatif. Si le retour reprend un ancien code sans état, utiliser une SESSION_SECRET neuve, jamais une clé précédente, et imposer une reconnexion générale : l'ancien code ignorerait la révocation SQL. Ne pas rétablir un ancien déploiement avec l'ancienne clé. Une restauration de sauvegarde peut aussi restaurer des sessions révoquées ; prévoir leur invalidation ou une clé neuve avant remise en service. Le retour SQL 02 n'est exécuté qu'après retrait du code dépendant et absence de sessions valides.

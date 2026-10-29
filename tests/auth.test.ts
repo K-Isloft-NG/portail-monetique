@@ -1,16 +1,18 @@
 import { randomBytes } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ query: vi.fn(), compare: vi.fn(), hash: vi.fn(), createSession: vi.fn(), deleteSession: vi.fn() }));
+const mocks = vi.hoisted(() => ({ query: vi.fn(), compare: vi.fn(), hash: vi.fn(), createSession: vi.fn(), deleteSession: vi.fn(), readSession: vi.fn(), revoke: vi.fn(), purge: vi.fn() }));
 vi.mock("@/lib/db", () => ({ query: mocks.query }));
 vi.mock("bcryptjs", () => ({ compare: mocks.compare, hash: mocks.hash }));
 vi.mock("@/lib/session", async (original) => ({
   ...await original<typeof import("@/lib/session")>(),
   createSession: mocks.createSession,
   deleteSession: mocks.deleteSession,
+  readSession: mocks.readSession,
 }));
 vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
 
+vi.mock("@/lib/session-store", () => ({ revokeCurrentSession: mocks.revoke, revokeAllSessions: mocks.revoke, purgeExpiredSessions: mocks.purge }));
 let authenticate: typeof import("@/lib/auth").authenticate;
 let password: string;
 let account: Record<string, unknown>;
@@ -21,12 +23,13 @@ describe("authentification", () => {
     vi.resetAllMocks();
     ({ authenticate } = await import("@/lib/auth"));
     password = randomBytes(20).toString("hex");
-    account = {
+    account = { session_id: "12345678-1234-4123-8123-123456789abc", issued_at: 1000, expires_at: 29800,
       id: 7, login: "compte-test", profile: "client", siren: "100000001",
       mot_de_passe_hash: randomBytes(32).toString("hex"), est_actif: true,
       is_blocked: false, wait_minutes: 0,
     };
     mocks.hash.mockResolvedValue(randomBytes(32).toString("hex"));
+    mocks.readSession.mockResolvedValue(null);
     mocks.compare.mockResolvedValue(false);
   });
 
@@ -71,13 +74,21 @@ describe("authentification", () => {
     expect(parameters).toEqual([7]);
   });
 
+  it("attribue un UUID neuf à chaque succès, sans reprendre le formulaire", async () => {
+    mocks.compare.mockResolvedValue(true); mocks.query.mockResolvedValue([account]);
+    await Promise.all([authenticate("compte-test", password), authenticate("compte-test", password)]);
+    const writes = mocks.query.mock.calls.filter(([sql]) => sql.includes("INSERT INTO public.sessions"));
+    expect(writes).toHaveLength(2); expect(writes[0][1][2] === writes[1][1][2]).toBe(false);
+    expect(writes[0][1][3]).toBe(28800);
+  });
   it("remet le compteur à zéro et ne retourne que les données de session", async () => {
     mocks.compare.mockResolvedValue(true);
     mocks.query.mockResolvedValueOnce([account]).mockResolvedValueOnce([account]);
     const result = await authenticate("compte-test", password);
-    expect(result).toEqual({ ok: true, user: { id: 7, login: "compte-test", profile: "client", siren: "100000001" } });
+    expect(result).toEqual({ ok: true, session: { sessionId: "12345678-1234-4123-8123-123456789abc", issuedAt: 1000, expiresAt: 29800 }, user: { id: 7, login: "compte-test", profile: "client", siren: "100000001" } });
     expect(mocks.query.mock.calls[1][0]).toContain("SET tentatives_echouees = 0");
-    expect(mocks.query.mock.calls[1][1]).toEqual([7, account.mot_de_passe_hash]);
+    expect(mocks.query.mock.calls[1][1].slice(0, 2)).toEqual([7, account.mot_de_passe_hash]);
+    expect(mocks.query.mock.calls[1][1][3]).toBe(28800);
   });
 
   it.each(["admin", "po"])("accepte un profil %s sans SIREN", async (profile) => {
@@ -170,7 +181,7 @@ describe("authentification", () => {
     form.set("profile", "admin");
     form.set("siren", "100000002");
     await expect(loginAction({}, form)).rejects.toThrow("REDIRECT:/client");
-    expect(mocks.createSession).toHaveBeenCalledWith({ id: 7, login: "compte-test", profile: "client", siren: "100000001" });
+    expect(mocks.createSession).toHaveBeenCalledWith({ id: 7, login: "compte-test", profile: "client", siren: "100000001" }, { sessionId: "12345678-1234-4123-8123-123456789abc", issuedAt: 1000, expiresAt: 29800 });
   });
 
   it("masque les erreurs SQL dans le retour du formulaire", async () => {

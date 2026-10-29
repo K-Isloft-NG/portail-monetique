@@ -162,3 +162,16 @@ Deux colonnes facultatives de utilisateurs conservent la trace des nouvelles cr�
 La [migration 04](../database/migrations/2026-10-29_04_accord_po.sql) est préparée, sans application attestée ici : vérifier la cible, appliquer sur dev d'abord, puis sur production avant la fusion de develop vers main et avant l'utilisation du code qui lit ces colonnes. Une colonne déjà présente provoque un refus explicite ; ne pas forcer un rejeu.
 
 Le [retour 04](../database/migrations/2026-10-29_04_accord_po_retour.sql) exige de retirer d'abord le code dépendant. Il refuse toute suppression si une seule valeur est renseignée dans l'une des deux colonnes. Dans ce cas, conserver les données et préparer séparément une sauvegarde validée et un retour adapté. Aucune sauvegarde automatique ni suppression forcée n'est prévue. La clé étrangère empêche la suppression physique d'un administrateur encore référencé ; sa désactivation conserve la trace.
+
+
+## Sessions révocables
+
+La migration 02, database/migrations/2026-10-29_02_sessions.sql, crée sessions avec un UUID serveur, un utilisateur lié par clé étrangère en cascade et trois dates TIMESTAMPTZ : création, expiration et révocation facultative. Deux index portent sur l'utilisateur et sur l'expiration. Le schéma neuf comporte huit tables et six index explicites ; le seed ne crée aucune session.
+
+Karlos contrôle la cible et une sauvegarde restaurable, applique la migration sur Neon dev, puis réalise la recette. Sur production, appliquer la migration avant la fusion de develop vers main, qui déclenche le déploiement. Ne pas rejouer schema.sql ou seed.sql sur une base existante. Le script refuse une table sessions déjà présente. Aucun résultat d'application de cette migration n'est attesté ici.
+
+Après déploiement, les anciens cookies sans UUID sont refusés : chaque utilisateur se reconnecte une fois. Le cookie reste signé ; la garde vérifie propriétaire, expiration, révocation et compte actif dans sa lecture SQL. Une déconnexion ferme la session courante ; la déconnexion globale ferme les sessions du compte visibles au début de son instruction. Une connexion concurrente ultérieure peut survivre ; une requête déjà admise peut finir. Le blocage temporaire ne ferme pas les sessions déjà ouvertes.
+
+La connexion purge au plus 100 sessions expirées depuis plus d'un jour, sans boucle. Un échec de maintenance ne fait pas perdre la connexion ; sans nouvelle connexion, aucune purge n'est garantie. La table ne contient ni cookie, ni mot de passe, ni adresse IP.
+
+Le retour 02 exige le retrait du code dépendant et refuse les sessions encore valides. Il supprime uniquement sessions et ses index, sans cascade générale. Le retour global d'initialisation supprime désormais sessions avant utilisateurs ; il ne sert pas au retour du seul lot.

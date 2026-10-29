@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS annonces_tresorerie;
 DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS remises;
 DROP TABLE IF EXISTS motifs_impayes;
+DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS utilisateurs;
 DROP TABLE IF EXISTS entreprises;
 DROP TABLE IF EXISTS profils;

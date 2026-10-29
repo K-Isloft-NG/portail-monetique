@@ -21,8 +21,10 @@ export async function requireProfile(expectedProfile: Profile) {
   const rows = await readRows(
     `SELECT u.id, u.login, u.est_actif, p.libelle AS profile, u.numero_siren AS siren
      FROM utilisateurs u JOIN profils p ON p.id = u.profil_id
-     WHERE u.id = $1`,
-    [session.id],
+     JOIN public.sessions s ON s.utilisateur_id = u.id
+     WHERE u.id = $1 AND s.id = $2::uuid AND s.date_revocation IS NULL
+       AND s.date_expiration > NOW() AND u.est_actif = TRUE`,
+    [session.id, session.sessionId],
   );
   const current = rows[0];
   const isActive = current?.est_actif === true;

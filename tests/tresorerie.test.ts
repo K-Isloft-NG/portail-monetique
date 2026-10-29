@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { amountToCents, decimalFromCents, parseTreasuryDate, parseTreasurySort, readTreasury, treasuryQuery, treasuryTotal, type TreasuryRow } from "@/lib/tresorerie";
 import { getTreasuryScope } from "@/lib/access";
-import type { SessionData } from "@/lib/session";
+import type { VerifiedSession } from "@/lib/session";
 
 const mocks = vi.hoisted(() => ({ query: vi.fn(), readSession: vi.fn() }));
 vi.mock("@/lib/db", () => ({ query: mocks.query }));
 vi.mock("@/lib/session", async (original) => ({ ...await original<typeof import("@/lib/session")>(), readSession: mocks.readSession }));
 vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
-const CLIENT: SessionData = { id: 1, login: "compte-test", profile: "client", siren: "100000001" };
+const CLIENT: VerifiedSession = { sessionId: "12345678-1234-4123-8123-123456789abc", id: 1, login: "compte-test", profile: "client", siren: "100000001" };
 const ROW: TreasuryRow = { id: 1, numero_siren: CLIENT.siren, raison_sociale: "Entreprise fictive", date_valeur: "2025-11-12", nb_transactions: 2, montant_total: "-182.23", devise: "EUR" };
 
 describe("trésorerie", () => {

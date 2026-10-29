@@ -1,12 +1,12 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { compare, hash } from "bcryptjs";
 import { query } from "@/lib/db";
-import { isSessionData, type SessionData } from "@/lib/session";
+import { isSessionData, isSessionRecord, SESSION_DURATION, type SessionData, type SessionRecord } from "@/lib/session";
 
 export const AUTH_ERROR = "Identifiant ou mot de passe incorrect.";
 export type LoginState = { error?: string; warning?: boolean };
 type AuthResult =
-  | { ok: true; user: SessionData }
+  | { ok: true; user: SessionData; session: SessionRecord }
   | { ok: false; reason: "invalid" | "warning" }
   | { ok: false; reason: "blocked"; minutes: number };
 
@@ -114,21 +114,39 @@ export async function authenticate(login: unknown, password: unknown): Promise<A
 
   // Le blocage et l'empreinte sont revérifiés avant le succès ; l'identité retournée est actuelle.
   const updated = await query(
-    `UPDATE utilisateurs AS u
-     SET tentatives_echouees = 0, bloque_jusqua = NULL
-     FROM profils AS p
-     WHERE u.id = $1 AND p.id = u.profil_id AND u.est_actif = TRUE
-       AND u.mot_de_passe_hash = $2
-       AND (u.bloque_jusqua IS NULL OR u.bloque_jusqua <= NOW())
-     RETURNING u.id, u.login, p.libelle AS profile, u.numero_siren AS siren`,
-    [account.id, account.mot_de_passe_hash],
+    `-- Le succès et sa session sont validés ensemble sur l'état courant du compte.
+WITH authenticated_user AS (
+    UPDATE public.utilisateurs AS u
+    SET tentatives_echouees = 0, bloque_jusqua = NULL
+    FROM public.profils AS p
+    WHERE u.id = $1 AND p.id = u.profil_id AND u.est_actif = TRUE
+      AND u.mot_de_passe_hash = $2
+      AND (u.bloque_jusqua IS NULL OR u.bloque_jusqua <= NOW())
+    RETURNING u.id, u.login, p.libelle AS profile, u.numero_siren AS siren
+), new_session AS (
+    INSERT INTO public.sessions (
+        id, utilisateur_id, date_creation, date_expiration, date_revocation
+    )
+    SELECT $3::uuid, id, NOW(), NOW() + ($4 * INTERVAL '1 second'), NULL
+    FROM authenticated_user
+    RETURNING id, utilisateur_id, date_creation, date_expiration
+)
+SELECT u.id, u.login, u.profile, u.siren,
+       s.id AS session_id,
+       FLOOR(EXTRACT(EPOCH FROM s.date_creation))::double precision AS issued_at,
+       FLOOR(EXTRACT(EPOCH FROM s.date_expiration))::double precision AS expires_at
+FROM authenticated_user u
+JOIN new_session s ON s.utilisateur_id = u.id`,
+    [account.id, account.mot_de_passe_hash, randomUUID(), SESSION_DURATION],
   );
   if (!updated[0]) return refusalAfterRace(account.id);
   const current = updated[0];
-  if (!isSessionData(current)) return { ok: false, reason: "invalid" };
+  const session = { sessionId: current.session_id as string, issuedAt: current.issued_at as number, expiresAt: current.expires_at as number };
+  if (!isSessionData(current) || !isSessionRecord(session)) return { ok: false, reason: "invalid" };
 
   return {
     ok: true,
+    session,
     user: { id: current.id, login: current.login, profile: current.profile, siren: current.siren } as SessionData,
   };
 }
