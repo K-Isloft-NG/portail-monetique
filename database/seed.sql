@@ -26,10 +26,10 @@ INSERT INTO motifs_impayes (id, code, libelle, description) VALUES
   (2, '02', 'Compte à découvert', 'Compte à découvert'),
   (3, '03', 'Compte clôturé', 'Compte clôturé'),
   (4, '04', 'Compte bloqué', 'Compte bloqué'),
-  (5, '05', 'Provision insuffis.', 'Provision insuffisante'),
-  (6, '06', 'Opération contestée', 'Opération contestée par le débiteur'),
+  (5, '05', 'Provision insuffisante', 'Provision insuffisante'),
+  (6, '06', 'Opération contestée par le débiteur', 'Opération contestée par le débiteur'),
   (7, '07', 'Titulaire décédé', 'Titulaire décédé'),
-  (8, '08', 'Motif non communiqué', 'Raison non communiquée, contacter la banque du client');
+  (8, '08', 'Raison non communiquée, contactez la banque du client', 'Raison non communiquée, contactez la banque du client');
 
 INSERT INTO entreprises (numero_siren, raison_sociale, devise, est_active) VALUES
   ('100000001', 'Boulangerie Dupain', 'EUR', TRUE),

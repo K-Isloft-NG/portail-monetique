@@ -58,14 +58,14 @@ CREATE TABLE utilisateurs (
 
 -- ------------------------------------------------------------
 -- motifs_impayes : table des huit motifs codifiés
--- libelle respecte le format char(20) des spécifications ;
--- description garde l'intitulé complet du backlog.
+-- Le Product Owner autorise plus de 20 caractères depuis le 28/10/2026.
+-- libelle est la seule référence d'affichage ; description reste pour compatibilité.
 -- ------------------------------------------------------------
 CREATE TABLE motifs_impayes (
     id           SERIAL PRIMARY KEY,
     code         CHAR(2) NOT NULL UNIQUE
                  CHECK (code ~ '^0[1-8]$'),
-    libelle      VARCHAR(20) NOT NULL,
+    libelle      VARCHAR(80) NOT NULL,
     description  VARCHAR(100) NOT NULL
 );
 
