@@ -95,3 +95,35 @@ button:disabled { cursor: wait; opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+select { font: inherit; }
+select:focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 2px; }
+.treasury-criteria { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px; padding: 20px; background: var(--color-blanc); border: 1px solid var(--color-filet); border-radius: 6px; font-size: 14px; }
+.criterion { display: flex; flex-direction: column; gap: 6px; }
+.criterion label { font-weight: 500; }
+.criterion input, .criterion select { min-height: 40px; width: 190px; max-width: 100%; padding: 8px 10px; border: 1px solid var(--color-contour-champ); border-radius: 4px; background: var(--color-blanc); }
+.company-criterion { flex: 1 1 260px; }
+.company-criterion select { width: 100%; }
+.treasury-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-block: 24px 16px; }
+.treasury-export { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+.treasury-export fieldset { margin: 0; padding: 0; border: 0; }
+.treasury-export label { display: inline-flex; align-items: center; gap: 6px; }
+.treasury-export input { accent-color: var(--color-petrole); }
+.negative-amount { color: var(--color-debit); }
+.numeric { text-align: right; }
+.sort-link { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.treasury-error, .company-information { margin-top: 24px; }
+.mobile-sorts { display: none; }
+@media (max-width: 767px) {
+  .treasury-criteria { align-items: stretch; padding: 16px; }
+  .criterion { width: 100%; }
+  .criterion input, .criterion select { width: 100%; }
+  .company-criterion { flex-basis: 100%; }
+  .treasury-toolbar { align-items: flex-start; }
+  .treasury-toolbar h2, .treasury-export { width: 100%; }
+  /* Les liens de tri restent visibles et utilisables quand les lignes s'empilent. */
+  .mobile-sorts { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 12px; font-size: 14px; }
+  .register thead { display: none; }
+  .register tfoot tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .register tfoot td { display: block; }
+  .register tfoot .empty-cell { display: none; }
+}
