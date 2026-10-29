@@ -146,3 +146,19 @@ Après restauration : comparer l'inventaire et les comptages à ceux de la sauve
 - Production initialisée le 27/10/2026 : schéma, jeu de démonstration et remplacement des mots de passe des six comptes.
 - Contrôles après initialisation et recette en ligne conformes (voir [deploiement.md](deploiement.md), section 7).
 - À surveiller : les quotas du plan Free, partagés entre les branches, et la période du jeu (novembre 2025 à octobre 2026), à choisir dans les filtres lors de la soutenance.
+
+## 8. Libellés complets des motifs d'impayé
+
+Le Product Owner a autorisé les libellés de plus de vingt caractères le 28/10/2026. Le schéma et le jeu de démonstration prévoient désormais `motifs_impayes.libelle VARCHAR(80) NOT NULL`, seule référence d'affichage. `description` reste conservée pour compatibilité, avec le même texte pour les huit motifs. Le code 08 porte « Raison non communiquée, contactez la banque du client », soit 53 caractères.
+
+Pour une base existante, la [migration du 29/10/2026](../database/migrations/2026-10-29_03_libelles_impayes.sql) est préparée, sans application attestée ici. Contrôler la cible, les huit codes et les anciens libellés de vingt caractères au plus ; tester sur dev d'abord, puis appliquer sur production avant la fusion de develop vers main. Le script sauvegarde seulement `code`, `libelle` et `description` dans `sauvegarde_motifs_20261029`. Une sauvegarde de ce nom déjà présente impose un arrêt et un contrôle de son origine.
+
+Le [retour associé](../database/migrations/2026-10-29_03_libelles_impayes_retour.sql) exige les huit codes d'origine et leur sauvegarde complète, restaure les textes avant de revenir à `VARCHAR(20)`, sans troncature, et conserve la sauvegarde. Retirer tout code qui affiche un libellé long avant ce retour. Ne pas relancer le seed sur une base déjà remplie.
+
+## 9. Accord du Product Owner à la création
+
+Deux colonnes facultatives de utilisateurs conservent la trace des nouvelles créations : accord_po_le (TIMESTAMPTZ, heure SQL de l'accord) et cree_par (INTEGER, clé étrangère vers utilisateurs.id). Le créateur vient de la session administrateur, jamais du formulaire. Les deux colonnes ont NULL par défaut : aucun accord n'est attribué rétroactivement aux comptes existants. La liste affiche la date de Paris ou « Non renseigné ».
+
+La [migration 04](../database/migrations/2026-10-29_04_accord_po.sql) est préparée, sans application attestée ici : vérifier la cible, appliquer sur dev d'abord, puis sur production avant la fusion de develop vers main et avant l'utilisation du code qui lit ces colonnes. Une colonne déjà présente provoque un refus explicite ; ne pas forcer un rejeu.
+
+Le [retour 04](../database/migrations/2026-10-29_04_accord_po_retour.sql) exige de retirer d'abord le code dépendant. Il refuse toute suppression si une seule valeur est renseignée dans l'une des deux colonnes. Dans ce cas, conserver les données et préparer séparément une sauvegarde validée et un retour adapté. Aucune sauvegarde automatique ni suppression forcée n'est prévue. La clé étrangère empêche la suppression physique d'un administrateur encore référencé ; sa désactivation conserve la trace.
