@@ -63,3 +63,32 @@ export async function getMerchants() {
   );
   return { session, merchants: rows as Merchant[] };
 }
+
+export async function requireTreasuryProfile() {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  return requireProfile(session.profile === "po" ? "po" : "client");
+}
+
+export async function getTreasuryScope(requestedSiren?: string | string[]) {
+  const session = await requireTreasuryProfile();
+  // Ignorer entièrement le critère fourni par un commerçant, même s'il est répété.
+  if (session.profile === "client") return { session, siren: getAuthorizedSiren(session) };
+  if (typeof requestedSiren !== "string" || !/^[0-9]{9}$/.test(requestedSiren)) return { session, siren: undefined };
+
+  // Un filtre du PO ne désigne qu'une entreprise existante, même désactivée.
+  const rows = await readRows("SELECT numero_siren FROM entreprises WHERE numero_siren = $1", [requestedSiren]);
+  return { session, siren: rows[0] ? requestedSiren : undefined };
+}
+
+export async function getPoCompany(siren: string) {
+  const session = await requireProfile("po");
+  if (!/^[0-9]{9}$/.test(siren)) notFound();
+  // Le PO conserve la consultation d'une entreprise désactivée, sans la modifier.
+  const rows = await readRows(
+    "SELECT numero_siren, raison_sociale, est_active FROM entreprises WHERE numero_siren = $1",
+    [siren],
+  );
+  if (!rows[0]) notFound();
+  return { session, company: rows[0] as Merchant & { est_active: boolean } };
+}
