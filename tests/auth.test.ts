@@ -37,6 +37,15 @@ describe("authentification", () => {
     expect(mocks.hash.mock.calls[0][1]).toBe(10);
     expect(mocks.query).toHaveBeenCalledOnce();
   });
+  it("ne donne jamais d'avertissement après deux essais d'un identifiant inconnu", async () => {
+    mocks.query.mockResolvedValue([]);
+    for (let i = 0; i < 2; i++) {
+      expect(await authenticate("inconnu", password)).toEqual({ ok: false, reason: "invalid" });
+    }
+    expect(mocks.compare).toHaveBeenCalledTimes(2);
+    expect(mocks.query).toHaveBeenCalledTimes(2);
+    expect(mocks.query.mock.calls.every(([sql]) => sql.startsWith("SELECT"))).toBe(true);
+  });
 
   it("traite de la même façon les refus sur compte inconnu et mauvais mot de passe", async () => {
     mocks.query.mockResolvedValueOnce([]).mockResolvedValueOnce([account]).mockResolvedValueOnce([{ tentatives_echouees: 1 }]);

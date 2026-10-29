@@ -14,6 +14,15 @@ describe("gestion des comptes", () => {
   it.each(["12345678", "1234567890", "12345678a"])("refuse le SIREN %s", siren => expect(validateAccount({ ...VALID, siren }).siren).toBeTruthy());
   it.each(["", " ", "a".repeat(21), "Nom\nclient", "\tNom", "Nom\n"])("refuse une raison sociale invalide", companyName => expect(validateAccount({ ...VALID, companyName }).companyName).toBeTruthy());
   it.each(["a", "a".repeat(20), "  Nom  "])("accepte une raison sociale dans les limites", companyName => expect(validateAccount({ ...VALID, companyName }).companyName).toBeUndefined());
+  it.each(["\u202eNom", "Nom\u200bclient", "Nom\u2066client", "B\u043eulangerie", "Nom\u00adclient", "Nom\u2028client", "=1+1", "A+ Services", "@Services"])("refuse une raison sociale hors liste blanche (%j)", companyName => expect(validateAccount({ ...VALID, companyName }).companyName).toBeTruthy());
+  it.each(["Boulangerie Dupain", "Garage du Centre", "Librairie Horizon", "Pharmacie des Lilas", "Recette Sprint 2", "L’Atelier d’Élodie", "Nom & Cie (2), A/B."])("accepte les noms existants et la ponctuation autorisée (%s)", companyName => expect(validateAccount({ ...VALID, companyName }).companyName).toBeUndefined());
+  it("compte les accents décomposés après normalisation", () => {
+    expect(validateAccount({ ...VALID, companyName: "Électricité Générale".normalize("NFD") }).companyName).toBeUndefined();
+  });
+  it("enregistre la forme NFC sans espaces de bord", async () => {
+    await createAccount(1, { ...VALID, companyName: " Électricité Générale ".normalize("NFD") });
+    expect(mocks.query.mock.calls[0][1][2]).toBe("Électricité Générale");
+  });
   it.each(["ab", "a".repeat(51), "nom client", "_compte", "Nom-client"])("refuse l'identifiant invalide %s", login => expect(validateAccount({ ...VALID, login }).login).toBeTruthy());
   it.each(["abc", "a".repeat(50), "1.nom_client-test"])("accepte l'identifiant %s", login => expect(validateAccount({ ...VALID, login }).login).toBeUndefined());
   it("exige l'accord", () => expect(validateAccount({ ...VALID, agreement: false }).agreement).toBeTruthy());
@@ -65,6 +74,7 @@ describe("gestion des comptes", () => {
     expect(sql).toContain("to_char(u.accord_po_le AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY') AS accord_po_le");
     expect(sql).toContain("bloque_jusqua > NOW()");
     expect(sql).toContain("ORDER BY p.libelle, u.login");
+    expect(sql).toContain("WHERE p.libelle IN ('client', 'po')");
   });
   it.each([disableAccount, unlockAccount])("refuse la cible identique à la session sans requête", async action => {
     await expect(action(1, 1)).rejects.toBeInstanceOf(AccountError);

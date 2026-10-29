@@ -84,7 +84,7 @@ Ils simulent le pilote de base et ne contactent pas Neon.
 ## Principes de sécurité
 
 - Requêtes SQL paramétrées (`$1`, `$2`), jamais de valeur concaténée dans le texte d'une requête.
-- Mots de passe hachés avec bcrypt (coût 10) ; un identifiant inconnu subit la même comparaison, et le message d'erreur est identique dans les deux cas.
+- Mots de passe hachés avec bcrypt (coût 10) ; au premier échec, identifiant inconnu et mot de passe faux reçoivent le même message ; l'avertissement et le blocage demandés par le PO révèlent ensuite qu'un compte existe.
 - Cookie de session `httpOnly`, `sameSite=lax`, `secure` en production, signé avec `SESSION_SECRET`.
 - Chaque page protégée relit le compte en base et vérifie son profil et son entreprise. Le proxy se limite à rediriger les visiteurs sans cookie vers `/login`.
 - Aucun secret ni mot de passe dans les fichiers versionnés.

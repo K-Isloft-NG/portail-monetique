@@ -1,8 +1,8 @@
 import { amountToCents, decimalFromCents, formatTreasuryDate, type TreasuryRow } from "@/lib/tresorerie";
 
 function csvText(value: string): string {
-  // Une cellule de texte ne doit pas devenir une formule dans un tableur.
-  const protectedValue = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  // Neutraliser les formules même après des espaces, ainsi que les contrôles en tête.
+  const protectedValue = /^\s*[=+\-@]|^[\t\r]/.test(value) ? `'${value}` : value;
   return /[;"\r\n]/.test(protectedValue) ? `"${protectedValue.replace(/"/g, '""')}"` : protectedValue;
 }
 
