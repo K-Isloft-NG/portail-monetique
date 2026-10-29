@@ -9,7 +9,7 @@ Version en ligne : https://portail-monetique.vercel.app
 
 Disponible à la fin du Sprint 1 :
 
-- connexion par identifiant et mot de passe, avec une session signée valable huit heures ;
+- connexion par identifiant et mot de passe, avec une session signée valable huit heures, révocable côté serveur ;
 - trois profils (administrateur, Product Owner, commerçant), chacun avec son espace : `/admin`, `/po` et `/client` ;
 - cloisonnement des commerçants : un commerçant n'accède qu'aux données de son entreprise, le SIREN étant toujours lu dans la session et jamais dans l'adresse ;
 - avertissement après deux échecs de connexion et bouton d'affichage du mot de passe ;
@@ -46,9 +46,9 @@ Le build et les tests unitaires ne nécessitent pas de connexion à la base.
 
 Les scripts du dossier `database/` sont exécutés manuellement dans le SQL Editor de Neon, après relecture :
 
-- `schema.sql` crée les sept tables ;
+- `schema.sql` crée les huit tables ;
 - `seed.sql` charge le jeu de démonstration (quatre entreprises, douze mois de transactions) ;
-- `rollback.sql` supprime les sept tables et leurs données.
+- `rollback.sql` supprime les huit tables et leurs données.
 
 Le projet Neon comporte deux branches : `dev` pour le développement local et les déploiements de préproduction, `production` pour le site en ligne. La procédure complète est dans [docs/base-de-donnees.md](docs/base-de-donnees.md).
 Les identifiants des comptes de démonstration ne sont pas versionnés : ils sont remis séparément.
@@ -115,3 +115,6 @@ Les variables d'environnement sont définies séparément pour chaque environnem
 - `main` (production) et `develop` (intégration) sont permanentes. Chaque travail se fait sur une branche `feature/<epic>-<sujet>` créée depuis `develop`.
 - Les messages de commit sont en français, commencent par un verbe à l'infinitif et se terminent par la référence de la story, par exemple `Ajouter les en-têtes de sécurité HTTP (E6-TS1)`.
 - Les branches sont fusionnées par demande de fusion (pull request), avec une liste de contrôle de relecture dans la description, en conservant un commit de fusion.
+
+
+La déconnexion révoque la session courante ; « Se déconnecter de tous les appareils » révoque celles du compte visibles au début de l'opération. Si la révocation ne peut pas être confirmée, le cookie reste présent pour réessayer et une erreur est affichée. La migration 02 doit être appliquée avant utilisation ; les anciens cookies imposent une reconnexion.

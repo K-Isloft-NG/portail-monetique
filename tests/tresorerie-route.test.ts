@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/export/tresorerie/route";
-import type { SessionData } from "@/lib/session";
+import type { VerifiedSession } from "@/lib/session";
 
 const mocks = vi.hoisted(() => ({ query: vi.fn(), readSession: vi.fn() }));
 vi.mock("@/lib/db", () => ({ query: mocks.query }));
 vi.mock("@/lib/session", async (original) => ({ ...await original<typeof import("@/lib/session")>(), readSession: mocks.readSession }));
 vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
-const CLIENT: SessionData = { id: 1, login: "compte-test", profile: "client", siren: "100000001" };
-function setup(session: SessionData) {
+const CLIENT: VerifiedSession = { sessionId: "12345678-1234-4123-8123-123456789abc", id: 1, login: "compte-test", profile: "client", siren: "100000001" };
+function setup(session: VerifiedSession) {
   mocks.readSession.mockResolvedValue(session);
   mocks.query.mockImplementation(async (sql: string, params: unknown[]) => {
     if (sql.includes("FROM utilisateurs")) return [{ ...session, est_actif: true }];
