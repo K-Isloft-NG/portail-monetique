@@ -154,3 +154,11 @@ Le Product Owner a autorisé les libellés de plus de vingt caractères le 28/10
 Pour une base existante, la [migration du 29/10/2026](../database/migrations/2026-10-29_03_libelles_impayes.sql) est préparée, sans application attestée ici. Contrôler la cible, les huit codes et les anciens libellés de vingt caractères au plus ; tester sur dev d'abord, puis appliquer sur production avant la fusion de develop vers main. Le script sauvegarde seulement `code`, `libelle` et `description` dans `sauvegarde_motifs_20261029`. Une sauvegarde de ce nom déjà présente impose un arrêt et un contrôle de son origine.
 
 Le [retour associé](../database/migrations/2026-10-29_03_libelles_impayes_retour.sql) exige les huit codes d'origine et leur sauvegarde complète, restaure les textes avant de revenir à `VARCHAR(20)`, sans troncature, et conserve la sauvegarde. Retirer tout code qui affiche un libellé long avant ce retour. Ne pas relancer le seed sur une base déjà remplie.
+
+## 9. Accord du Product Owner à la création
+
+Deux colonnes facultatives de utilisateurs conservent la trace des nouvelles créations : accord_po_le (TIMESTAMPTZ, heure SQL de l'accord) et cree_par (INTEGER, clé étrangère vers utilisateurs.id). Le créateur vient de la session administrateur, jamais du formulaire. Les deux colonnes ont NULL par défaut : aucun accord n'est attribué rétroactivement aux comptes existants. La liste affiche la date de Paris ou « Non renseigné ».
+
+La [migration 04](../database/migrations/2026-10-29_04_accord_po.sql) est préparée, sans application attestée ici : vérifier la cible, appliquer sur dev d'abord, puis sur production avant la fusion de develop vers main et avant l'utilisation du code qui lit ces colonnes. Une colonne déjà présente provoque un refus explicite ; ne pas forcer un rejeu.
+
+Le [retour 04](../database/migrations/2026-10-29_04_accord_po_retour.sql) exige de retirer d'abord le code dépendant. Il refuse toute suppression si une seule valeur est renseignée dans l'une des deux colonnes. Dans ce cas, conserver les données et préparer séparément une sauvegarde validée et un retour adapté. Aucune sauvegarde automatique ni suppression forcée n'est prévue. La clé étrangère empêche la suppression physique d'un administrateur encore référencé ; sa désactivation conserve la trace.

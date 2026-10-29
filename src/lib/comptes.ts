@@ -9,6 +9,7 @@ export type CreateAccountState = { values?: AccountValues; errors?: AccountError
 export type ManagedAccount = {
   id: number; login: string; profile: "client" | "po"; numero_siren: string | null;
   raison_sociale: string | null; est_actif: boolean; is_blocked: boolean; state: string;
+  accord_po_le: string | null;
 };
 type AccountErrorCode = "siren-exists" | "login-exists" | "unavailable";
 const ERROR_TEXT: Record<AccountErrorCode, string> = {
@@ -73,6 +74,7 @@ const ACTOR_SQL = `SELECT u.id FROM utilisateurs u JOIN profils p ON p.id = u.pr
                   WHERE u.id = $1 AND p.libelle = 'admin' AND u.est_actif = TRUE
                   FOR SHARE OF u`;
 const ACCOUNT_COLUMNS = `u.id, u.login, p.libelle AS profile, u.numero_siren, e.raison_sociale, u.est_actif,
+    to_char(u.accord_po_le AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY') AS accord_po_le,
     COALESCE(u.est_actif AND u.bloque_jusqua > NOW(), FALSE) AS is_blocked,
     CASE WHEN NOT u.est_actif THEN 'Désactivé'
          WHEN u.bloque_jusqua > NOW() THEN 'Bloqué jusqu''à ' ||
@@ -82,7 +84,7 @@ const ACCOUNT_COLUMNS = `u.id, u.login, p.libelle AS profile, u.numero_siren, e.
                   THEN 'HH24:MI' ELSE 'DD/MM/YYYY HH24:MI' END)
          ELSE 'Actif' END AS state`;
 export async function listAccounts(): Promise<ManagedAccount[]> {
-  // Ne sélectionner que l'identité et l'état opérationnel, sans empreinte ni données financières.
+  // Limiter la liste à l'identité, l'état et l'accord, sans empreinte ni données financières.
   return await accountQuery(
     `SELECT ${ACCOUNT_COLUMNS} FROM utilisateurs u JOIN profils p ON p.id = u.profil_id
      LEFT JOIN entreprises e ON e.numero_siren = u.numero_siren
@@ -105,6 +107,7 @@ export async function createAccount(actorId: number, values: AccountValues) {
   const passwordHash = await hash(initial, 10);
   // Lier les insertions garantit qu'une erreur annule l'entreprise et le compte.
   // Vérifier le profil client avant l'entreprise évite une ligne orpheline.
+  // Tracer l'accord avec l'horloge SQL et l'acteur contrôlé évite des valeurs forgées.
   const rows = await accountQuery(
     `WITH actor AS (${ACTOR_SQL}), client_profile AS (
        SELECT id FROM profils WHERE libelle = 'client'
@@ -112,8 +115,8 @@ export async function createAccount(actorId: number, values: AccountValues) {
        INSERT INTO entreprises (numero_siren, raison_sociale)
        SELECT $2, $3 FROM actor CROSS JOIN client_profile RETURNING numero_siren
      )
-     INSERT INTO utilisateurs (login, mot_de_passe_hash, profil_id, numero_siren)
-     SELECT $4, $5, p.id, e.numero_siren FROM new_company e CROSS JOIN client_profile p
+     INSERT INTO utilisateurs (login, mot_de_passe_hash, profil_id, numero_siren, accord_po_le, cree_par)
+     SELECT $4, $5, p.id, e.numero_siren, NOW(), $1 FROM new_company e CROSS JOIN client_profile p
      RETURNING id`,
     [actorId, values.siren, values.companyName.trim(), values.login, passwordHash],
   );

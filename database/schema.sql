@@ -52,6 +52,9 @@ CREATE TABLE utilisateurs (
                          CHECK (tentatives_echouees >= 0),
     -- Fin du blocage temporaire ; NULL si aucun blocage.
     bloque_jusqua        TIMESTAMPTZ DEFAULT NULL,
+    -- Aucun accord n'est inventé pour les anciens comptes ; les créations le tracent.
+    accord_po_le         TIMESTAMPTZ DEFAULT NULL,
+    cree_par             INTEGER DEFAULT NULL REFERENCES utilisateurs (id),
     est_actif            BOOLEAN NOT NULL DEFAULT TRUE,
     date_creation        TIMESTAMP NOT NULL DEFAULT NOW()
 );

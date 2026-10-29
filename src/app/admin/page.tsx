@@ -21,11 +21,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       {message && <div className={message.error ? "login-error account-errors" : "account-success"} role={message.error ? "alert" : "status"}>{message.text}</div>}
       {failed ? <div className="login-error" role="alert">Liste des comptes indisponible. Réessayez plus tard.</div> : <Tableau caption="Comptes clients et Product Owner" columns={[
         { key: "login", label: "Identifiant" }, { key: "profile", label: "Profil" }, { key: "siren", label: "N° de SIREN" },
-        { key: "company", label: "Raison sociale" }, { key: "state", label: "État" }, { key: "action", label: "Action" },
+        { key: "company", label: "Raison sociale" }, { key: "state", label: "État" }, { key: "agreement", label: "Accord du PO" }, { key: "action", label: "Action" },
       ]} rows={accounts.map(account => ({ key: String(account.id), cells: {
         login: account.login, profile: account.profile === "po" ? "Product Owner" : "Client",
         siren: account.numero_siren ? formatSiren(account.numero_siren) : "Sans objet",
         company: account.raison_sociale ?? "Sans objet", state: account.state,
+        agreement: account.accord_po_le ?? "Non renseigné",
         action: account.id === session.id || !account.est_actif ? "Sans action" : account.is_blocked ?
           <form action={unlockAccountAction}><input type="hidden" name="id" value={account.id} /><button type="submit" className="button-secondary">Débloquer</button></form> :
           account.profile === "client" ? <Link href={"/admin/desactiver/" + account.id} className="text-link">Désactiver</Link> : "Sans action",

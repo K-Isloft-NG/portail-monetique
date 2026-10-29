@@ -35,6 +35,8 @@ describe("gestion des comptes", () => {
     expect(sql).toContain("WITH actor AS");
     expect(sql).toContain("INSERT INTO entreprises");
     expect(sql).toContain("INSERT INTO utilisateurs");
+    expect(sql).toContain("numero_siren, accord_po_le, cree_par");
+    expect(sql).toContain("p.id, e.numero_siren, NOW(), $1");
     expect(sql).toContain("FROM actor CROSS JOIN client_profile");
     expect(sql).toContain("p.libelle = 'admin'");
     expect(params.slice(0, 4)).toEqual([1, VALID.siren, "Nom", VALID.login]);
@@ -60,6 +62,7 @@ describe("gestion des comptes", () => {
     const sql = mocks.query.mock.calls[0][0];
     expect(sql).not.toMatch(/mot_de_passe_hash|annonces_tresorerie|remises|transactions|montant/);
     expect(sql).toContain("Europe/Paris");
+    expect(sql).toContain("to_char(u.accord_po_le AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY') AS accord_po_le");
     expect(sql).toContain("bloque_jusqua > NOW()");
     expect(sql).toContain("ORDER BY p.libelle, u.login");
   });

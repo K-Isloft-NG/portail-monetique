@@ -3,6 +3,10 @@ import { createAccountAction, disableAccountAction, unlockAccountAction } from "
 import { getAdminMessage } from "@/lib/comptes";
 import { requireProfile } from "@/lib/access";
 import DisablePage from "@/app/admin/desactiver/[id]/page";
+import AdminPage from "@/app/admin/page";
+import { renderToStaticMarkup } from "react-dom/server";
+vi.mock("@/components/LogoutButton", () => ({ default: () => null }));
+vi.mock("@/components/CreationCompte", () => ({ default: () => null }));
 const mocks = vi.hoisted(() => ({ query: vi.fn(), readSession: vi.fn(), revalidate: vi.fn() }));
 vi.mock("@/lib/db", () => ({ query: mocks.query }));
 vi.mock("@/lib/session", async original => ({ ...await original<typeof import("@/lib/session")>(), readSession: mocks.readSession }));
@@ -50,6 +54,24 @@ describe("action de création d'un compte", () => {
     expect(params.some((v: unknown) => v === result.password)).toBe(false);
     expect(result.values).toBeUndefined();
     expect(mocks.revalidate).toHaveBeenCalledWith("/admin");
+  });
+  it("ignore un créateur et une date d'accord forgés dans le formulaire", async () => {
+    const data = form(); data.set("cree_par", "999"); data.set("accord_po_le", "1900-01-01");
+    await createAccountAction({}, data);
+    const [sql, params] = mocks.query.mock.calls[1];
+    expect(params[0]).toBe(ADMIN.id);
+    expect(params.slice(0, 4)).not.toContain("999");
+    expect(params).not.toContain("1900-01-01");
+    expect(params).toHaveLength(5);
+    expect(sql).toContain("e.numero_siren, NOW(), $1");
+  });
+  it.each([null, "29/10/2026"])("affiche la date de l'accord ou Non renseigné (%s)", async agreement => {
+    mocks.query.mockResolvedValueOnce([{ ...ADMIN, est_actif: true }]).mockResolvedValueOnce([
+      { id: 7, login: "compte-test-client", profile: "client", numero_siren: "999999990", raison_sociale: "Entreprise fictive", est_actif: false, is_blocked: false, state: "Désactivé", accord_po_le: agreement },
+    ]);
+    const html = renderToStaticMarkup(await AdminPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain("Accord du PO");
+    expect(html).toContain(agreement ?? "Non renseigné");
   });
   it.each([disableAccountAction, unlockAccountAction])("refuse sa propre cible sans écriture", async action => {
     const data = new FormData(); data.set("id", "1");
