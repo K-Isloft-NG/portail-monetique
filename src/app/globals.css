@@ -113,6 +113,25 @@ select:focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 
 .sort-link { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
 .treasury-error, .company-information { margin-top: 24px; }
 .mobile-sorts { display: none; }
+.account-create { margin-top: 32px; padding: 24px; background: var(--color-blanc); border: 1px solid var(--color-filet); border-radius: 6px; }
+.account-create h2 { margin-bottom: 20px; }
+.account-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; font-size: 14px; }
+.account-form label { display: block; margin-bottom: 6px; font-weight: 500; }
+.account-form input:not([type="checkbox"]) { min-width: 0; width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--color-contour-champ); border-radius: 4px; }
+.account-form .account-agreement { display: flex; align-items: center; gap: 8px; }
+.account-form > :nth-last-child(2) { grid-column: 1 / -1; }
+.account-form button { justify-self: start; }
+.field-error { margin-top: 6px; color: var(--color-debit); }
+.account-errors, .account-success { margin-bottom: 20px; }
+.account-errors ul { margin-top: 8px; padding-left: 20px; list-style: disc; }
+.account-success { border: 1px solid var(--color-petrole); padding: 16px; background: var(--color-petrole-clair); }
+.account-success p + p { margin-top: 8px; }
+.initial-password-value { font-weight: 600; letter-spacing: .08em; overflow-wrap: anywhere; }
+.account-confirmation { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+@media (max-width: 767px) {
+  .account-create { padding: 16px; }
+  .account-form { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 767px) {
   .treasury-criteria { align-items: stretch; padding: 16px; }
   .criterion { width: 100%; }
