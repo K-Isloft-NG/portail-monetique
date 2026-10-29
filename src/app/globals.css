@@ -49,7 +49,8 @@ button:disabled { cursor: wait; opacity: .6; }
 .portal-name { color: var(--color-petrole); font-size: 14px; font-weight: 600; padding: 0 8px 20px; }
 .mobile-menu { display: none; }
 .sidebar-content { display: flex; flex: 1; flex-direction: column; }
-.sidebar nav a { display: block; padding: 9px 8px; border-radius: 4px; background: var(--color-petrole-clair); color: var(--color-petrole); font-size: 14px; font-weight: 600; }
+.sidebar nav a { display: block; padding: 9px 8px; border-radius: 4px; color: var(--color-petrole); font-size: 14px; }
+.sidebar nav a[aria-current="page"] { background: var(--color-petrole-clair); font-weight: 600; }
 .identity { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--color-filet); font-size: 13px; text-align: center; text-wrap: balance; overflow-wrap: normal; }
 .identity p + p { color: var(--color-encre-douce); }
 .identity form { margin-top: 10px; }
@@ -112,6 +113,17 @@ select:focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 
 .treasury-export label { display: inline-flex; align-items: center; gap: 6px; }
 .treasury-export input { accent-color: var(--color-petrole); }
 .negative-amount { color: var(--color-debit); }
+.remittances-register th, .remittances-register td { padding-inline: 10px; }
+.remittances-register .remittance-detail[hidden] { display: none; }
+.remittances-register > tbody > .remittance-detail > td { display: table-cell; padding: 20px; background: var(--color-petrole-clair); }
+.remittance-detail h2 { margin-bottom: 16px; font-size: 16px; }
+.remittance-detail .register { background: transparent; }
+.remittance-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 20px; font-size: 14px; }
+.remittance-company-link { margin-bottom: 20px; }
+@media (max-width: 767px) {
+  /* Le détail occupe la largeur de la ligne empilée, sans cellule de mise en page. */
+  .remittances-register > tbody > .remittance-detail > td { display: block; padding: 16px 10px; }
+}
 .numeric { text-align: right; }
 .sort-link { color: inherit; text-decoration: underline; text-underline-offset: 4px; }
 .treasury-error, .company-information { margin-top: 24px; }

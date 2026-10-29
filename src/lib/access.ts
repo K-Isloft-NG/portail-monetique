@@ -94,3 +94,8 @@ export async function getPoCompany(siren: string) {
   if (!rows[0]) notFound();
   return { session, company: rows[0] as Merchant & { est_active: boolean } };
 }
+
+export async function getRemittanceScope(requestedSiren?: string | string[]) {
+  // Les remises suivent exactement les droits de consultation déjà en place.
+  return getTreasuryScope(requestedSiren);
+}

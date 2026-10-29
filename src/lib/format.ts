@@ -13,3 +13,9 @@ export function formatMontant(value: number | string): string {
   const grouped = integer.replace(/\B(?=([0-9]{3})+(?![0-9]))/g, "\u00a0");
   return `${amount < 0 ? "\u2212" : ""}${grouped},${decimals}`;
 }
+
+export function formatCard(value?: string | null): string {
+  // Le détail ne doit jamais exposer les chiffres centraux, même si la source change.
+  if (typeof value !== "string" || value.length !== 16) return "Non renseigné";
+  return `${value.slice(0, 5)}*******${value.slice(-4)}`;
+}
