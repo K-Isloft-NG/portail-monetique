@@ -12,7 +12,7 @@ export default async function PoRemittancesPage({ searchParams }: { searchParams
   // Une erreur de saisie conserve seulement un filtre d'entreprise reconnu.
   if (result.criteria.error && typeof params.siren === "string" && merchants.some(merchant => merchant.numero_siren === params.siren)) result.siren = params.siren;
   return (
-    <EspaceConnecte entry="Remises" href="/po/remises" entries={[{ label: "Trésorerie", href: "/po" }, { label: "Remises", href: "/po/remises" }]} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
+    <EspaceConnecte entry="Remises" href="/po/remises" entries={[{ label: "Trésorerie", href: "/po" }, { label: "Remises", href: "/po/remises" }, { label: "Impayés", href: "/po/impayes" }]} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
       <Remises result={result} basePath="/po/remises" merchants={merchants} />
     </EspaceConnecte>
   );
