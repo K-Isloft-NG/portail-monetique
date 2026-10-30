@@ -10,7 +10,7 @@ export default async function ClientPage({ searchParams }: { searchParams: Promi
   const { session, company } = await getClientCompany();
   const result = await readTreasury(await searchParams);
   return (
-    <EspaceConnecte entry="Trésorerie" href="/client" entries={[{ label: "Trésorerie", href: "/client" }, { label: "Remises", href: "/client/remises" }]} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
+    <EspaceConnecte entry="Trésorerie" href="/client" entries={[{ label: "Trésorerie", href: "/client" }, { label: "Remises", href: "/client/remises" }, { label: "Impayés", href: "/client/impayes" }]} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
       <Tresorerie result={result} basePath="/client" companyName={company.raison_sociale} />
       <p className="company-information"><Link href={`/client/entreprise/${session.siren}`} className="text-link">Informations de l&apos;entreprise</Link></p>
     </EspaceConnecte>

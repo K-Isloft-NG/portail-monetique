@@ -113,6 +113,10 @@ select:focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 
 .treasury-export label { display: inline-flex; align-items: center; gap: 6px; }
 .treasury-export input { accent-color: var(--color-petrole); }
 .negative-amount { color: var(--color-debit); }
+.unpaid-list .register th, .unpaid-list .register td { padding-inline: 10px; }
+/* Garder dates et cartes d'un seul tenant évite de séparer leur dernier chiffre. */
+.unpaid-list .tabular-nums { white-space: nowrap; }
+.unpaid-list .register th { overflow-wrap: normal; }
 .remittances-register th, .remittances-register td { padding-inline: 10px; }
 .remittances-register .remittance-detail[hidden] { display: none; }
 .remittances-register > tbody > .remittance-detail > td { display: table-cell; padding: 20px; background: var(--color-petrole-clair); }
