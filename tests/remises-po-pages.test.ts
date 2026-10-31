@@ -63,6 +63,7 @@ describe("pages des remises du Product Owner", () => {
     expect(html).toContain("Toutes");
     expect(html).toContain("Entreprise fictive");
     expect(html).toContain('aria-current="page" href="/po/remises"');
+    expect(html).toContain('href="/po/impayes"');
   });
   it("conserve l'entreprise sélectionnée en cas de critères invalides sans lire les remises", async () => {
     const html = renderToStaticMarkup(await page({ siren: COMPANY.numero_siren, numero: "%" }));
@@ -81,5 +82,6 @@ describe("pages des remises du Product Owner", () => {
     expect(html).toContain('aria-current="page" href="/admin"');
     expect(html).not.toContain(">Remises<");
     expect(html).not.toContain(">Trésorerie<");
+    expect(html).not.toContain(">Impayés<");
   });
 });

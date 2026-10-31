@@ -33,19 +33,25 @@ function positiveId(value?: string | string[]) {
   return Number.isSafeInteger(id) && id > 0 ? id : undefined;
 }
 
-export function parseRemittanceCriteria(params: TreasuryParams): RemittanceCriteria {
+export function parseRemittanceDateRange(params: TreasuryParams) {
   const start = parseTreasuryDate(params.debut);
   const end = parseTreasuryDate(params.fin);
-  const numberText = typeof params.numero === "string" ? params.numero : "";
-  const size = params.lignes === undefined ? 10 : typeof params.lignes === "string" && /^[0-9]+$/.test(params.lignes) ? Number(params.lignes) : 0;
   let error: string | undefined;
   if (Array.isArray(params.debut) || Array.isArray(params.fin) || start.error || end.error) error = DATE_ERROR;
   else if (start.iso && end.iso && start.iso > end.iso) error = "La date de début doit précéder la date de fin.";
+  return { startText: start.text, endText: end.text, startIso: start.iso, endIso: end.iso, error };
+}
+
+export function parseRemittanceCriteria(params: TreasuryParams): RemittanceCriteria {
+  const range = parseRemittanceDateRange(params);
+  const numberText = typeof params.numero === "string" ? params.numero : "";
+  const size = params.lignes === undefined ? 10 : typeof params.lignes === "string" && /^[0-9]+$/.test(params.lignes) ? Number(params.lignes) : 0;
+  let error = range.error;
   // Un champ facultatif vide est sans filtre ; un fragment présent exclut les jokers SQL.
-  else if (Array.isArray(params.numero) || (numberText !== "" && !isRemittanceNumber(numberText))) error = NUMBER_ERROR;
-  else if (!Number.isInteger(size) || size < 1 || size > 100) error = SIZE_ERROR;
+  if (!error && (Array.isArray(params.numero) || (numberText !== "" && !isRemittanceNumber(numberText)))) error = NUMBER_ERROR;
+  else if (!error && (!Number.isInteger(size) || size < 1 || size > 100)) error = SIZE_ERROR;
   return {
-    startText: start.text, endText: end.text, startIso: start.iso, endIso: end.iso,
+    ...range,
     numberText, pageSize: size >= 1 && size <= 100 ? size : 10,
     page: positiveId(params.page) ?? 1, openedId: positiveId(params.remise), error,
   };

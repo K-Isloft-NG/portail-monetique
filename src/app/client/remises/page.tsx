@@ -10,7 +10,7 @@ export default async function ClientRemittancesPage({ searchParams }: { searchPa
   const { session, company } = await getClientCompany();
   const result = await readRemittances(await searchParams);
   return (
-    <EspaceConnecte entry="Remises" href="/client/remises" entries={[{ label: "Trésorerie", href: "/client" }, { label: "Remises", href: "/client/remises" }]} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
+    <EspaceConnecte entry="Remises" href="/client/remises" entries={[{ label: "Trésorerie", href: "/client" }, { label: "Remises", href: "/client/remises" }, { label: "Impayés", href: "/client/impayes" }]} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
       <Remises result={result} basePath="/client/remises" companyName={company.raison_sociale} />
     </EspaceConnecte>
   );
