@@ -1,0 +1,9 @@
+import type { TreasuryResult } from "@/lib/tresorerie";
+import type { RemittanceResult } from "@/lib/remises";
+import type { UnpaidResult } from "@/lib/impayes";
+
+export const NOW = new Date("2026-11-02T23:30:00Z");
+export const COMPANY = { numero_siren: "001234567", raison_sociale: "Épicerie à côté" };
+export const TREASURY: TreasuryResult = { siren: COMPANY.numero_siren, dateText: "12/11/2025", sort: { key: "montant", order: "asc" }, totalCents: -18223, rows: [{ id: 1, ...COMPANY, date_valeur: "2025-11-12", nb_transactions: 3, devise: "EUR", montant_total: "-182.23" }] };
+export const REMITTANCES: RemittanceResult = { siren: COMPANY.numero_siren, criteria: { startText: "01/11/2025", endText: "30/11/2025", startIso: "2025-11-01", endIso: "2025-11-30", numberText: "R-00", pageSize: 10, page: 1 }, count: 1, totalCents: -18223, page: 1, pageCount: 1, rows: [{ id: 1, ...COMPANY, numero_remise: "R-001", date_remise: "2025-11-12", nb_transactions: 1, montant_total: "182.23", sens: "-", devise: "EUR" }], details: [{ id: 2, numero_siren: COMPANY.numero_siren, date_vente: "2025-11-11", numero_carte: "1234567890125896", reseau: "CB", numero_autorisation: "000012", devise: "EUR", montant: "182.23", sens: "-" }] };
+export const UNPAID: UnpaidResult = { siren: COMPANY.numero_siren, criteria: { startText: "01/11/2025", endText: "", startIso: "2025-11-01", endIso: undefined, error: undefined, dossierText: "D0001", sort: { key: "montant", order: "asc" }, companyOrder: "desc" }, count: 1, totalCents: -18223, rows: [{ id: 1, numero_siren: COMPANY.numero_siren, date_vente: "2025-11-11", date_remise: "2025-11-12", numero_carte: "1234567890125896", reseau: "CB", numero_dossier_impaye: "D0001", devise: "EUR", montant: "-182.23", libelle: "Opération contestée par le débiteur" }], companies: [{ ...COMPANY, count: 1, totalCents: -18223 }] };

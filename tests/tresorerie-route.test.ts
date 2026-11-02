@@ -45,16 +45,17 @@ describe("droits et réponse de l'export de trésorerie", () => {
     expect(response.status).toBe(400);
     expect(mocks.query.mock.calls.every(([sql]) => !sql.includes("FROM annonces_tresorerie"))).toBe(true);
   });
-  it("refuse un format indisponible sans lire les annonces", async () => {
+  it("produit le format PDF demandé", async () => {
     const response = await GET(new Request("http://localhost/export/tresorerie?format=pdf"));
-    expect(response.status).toBe(400);
-    expect(mocks.query.mock.calls.every(([sql]) => !sql.includes("FROM annonces_tresorerie"))).toBe(true);
-  });
-  it.each(["format=csv&format=pdf", "format=pdf&format=csv"])("garde le CSV quand le format est répété (%s)", async params => {
-    const response = await GET(new Request("http://localhost/export/tresorerie?" + params));
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8");
-    expect(await response.text()).toContain(";100000001;");
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+    expect(Buffer.from(await response.arrayBuffer()).subarray(0, 4).toString()).toBe("%PDF");
+  });
+  it.each(["format=csv&format=pdf", "format=pdf&format=csv"])("refuse un format répété (%s)", async params => {
+    const response = await GET(new Request("http://localhost/export/tresorerie?" + params));
+    expect(response.status).toBe(400);
+    expect(response.headers.has("Content-Disposition")).toBe(false);
+    expect(mocks.query.mock.calls.every(([sql]) => !sql.includes("FROM annonces_tresorerie"))).toBe(true);
   });
   it("ramène le tri SIREN du commerçant au tri date par défaut", async () => {
     const response = await GET(new Request("http://localhost/export/tresorerie?sort=siren&order=desc&siren=100000002"));

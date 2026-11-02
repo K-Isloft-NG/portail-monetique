@@ -29,7 +29,7 @@ describe("page des impayés du commerçant", () => {
     for (const text of ["N° SIREN", "Date vente", "Date de remise", "N° Carte", "Réseau", "N° dossier impayé", "Devise (EUR)", "Montant", "Libellé impayé", ROW.libelle, ROW.numero_carte]) expect(html).toContain(text);
     expect(html).toContain('class="tabular-nums negative-amount">−182,23');
     expect(html).toContain("1 impayé"); expect(html).toContain("Total des impayés");
-    expect(html).not.toContain("Somme des impayés par entreprise"); expect(html).not.toContain("Exporter"); expect(html).not.toContain("Pagination");
+    expect(html).not.toContain("Somme des impayés par entreprise"); expect(html).toContain('action="/export/impayes"'); expect(html).not.toContain("Pagination");
     expect(html).toMatch(/<a(?=[^>]*href="\/client\/impayes")(?=[^>]*aria-current="page")[^>]*>/);
     expect(html).toContain('href="/client/remises"'); expect(html).toContain('href="/client"');
   });
