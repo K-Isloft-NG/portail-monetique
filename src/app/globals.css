@@ -108,8 +108,8 @@ select:focus-visible { outline: 2px solid var(--color-petrole); outline-offset: 
 .company-criterion { flex: 1 1 260px; }
 .company-criterion select { width: 100%; }
 .treasury-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-block: 24px 16px; }
-.treasury-export { display: flex; align-items: center; gap: 18px; font-size: 14px; }
-.treasury-export fieldset { margin: 0; padding: 0; border: 0; }
+.treasury-export { display: flex; align-items: center; flex-wrap: wrap; max-width: 100%; gap: 12px 18px; font-size: 14px; }
+.treasury-export fieldset { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 0; border: 0; }
 .treasury-export label { display: inline-flex; align-items: center; gap: 6px; }
 .treasury-export input { accent-color: var(--color-petrole); }
 .negative-amount { color: var(--color-debit); }

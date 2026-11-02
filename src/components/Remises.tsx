@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import BandeauSynthese from "@/components/BandeauSynthese";
 import Tableau from "@/components/Tableau";
+import ExportFormulaire from "@/components/ExportFormulaire";
 import { formatCard, formatMontant, formatSiren } from "@/lib/format";
 import { decimalFromCents, formatTreasuryDate } from "@/lib/tresorerie";
 import { remittanceQuery, signedRemittanceCents, type RemittanceResult } from "@/lib/remises";
@@ -41,7 +42,9 @@ export default function Remises({ result, basePath, companyName, merchants, inac
       <button className="button-primary" type="submit">Rechercher</button><Link className="text-link" href={basePath}>Réinitialiser</Link>
     </form>
     {criteria.error ? <div className="login-error treasury-error" role="alert">{criteria.error}</div> : <>
-      <div className="treasury-toolbar"><h2>{count ? `${count} ${count === 1 ? "remise" : "remises"}` : emptyMessage}</h2>{count > 0 && <p className="tabular-nums">{count === 1 ? "Affichée" : "Affichées"} de {first} à {last}</p>}</div>
+      <div className="treasury-toolbar"><h2>{count ? `${count} ${count === 1 ? "remise" : "remises"}` : emptyMessage}</h2>{count > 0 && <p className="tabular-nums">{count === 1 ? "Affichée" : "Affichées"} de {first} à {last}</p>}
+        <ExportFormulaire action="/export/remises" query={remittanceQuery(result)} label="Exporter les remises" />
+      </div>
       <table className="register remittances-register">
         <caption className="sr-only">Remises de paiements par carte</caption>
         <thead><tr>{["N° SIREN", "Raison sociale", "N° Remise", "Date traitement", "Nbre transactions", "Devise (EUR)", "Montant total", "Sens + ou -"].map((label, index) => <th key={label} scope="col" className={index === 4 || index === 6 ? "numeric" : undefined}>{label}</th>)}</tr></thead>
@@ -57,7 +60,9 @@ export default function Remises({ result, basePath, companyName, merchants, inac
         </tr>
           <tr id={`detail-${row.id}`} className="remittance-detail" hidden={result.openedId !== row.id}><td colSpan={8}>
             {result.openedId === row.id && <section aria-labelledby={`detail-title-${row.id}`}>
-              <h2 id={`detail-title-${row.id}`}>Détail de la remise {row.numero_remise}</h2>
+              <div className="treasury-toolbar"><h2 id={`detail-title-${row.id}`}>Détail de la remise {row.numero_remise}</h2>
+                <ExportFormulaire action="/export/remises" query={remittanceQuery(result)} label={`Exporter le détail de la remise ${row.numero_remise}`} detailId={row.id} />
+              </div>
               <Tableau caption={`Transactions de la remise ${row.numero_remise}`} columns={[
                 { key: "siren", label: "N° SIREN" }, { key: "date", label: "Date vente" },
                 { key: "card", label: "N° Carte" }, { key: "network", label: "Réseau" },

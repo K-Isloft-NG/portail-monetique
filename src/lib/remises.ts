@@ -62,7 +62,7 @@ export function signedRemittanceCents(amount: string, direction: "+" | "-") {
   return direction === "-" && cents !== 0 ? -cents : cents;
 }
 
-export async function readRemittances(params: TreasuryParams): Promise<RemittanceResult> {
+export async function readRemittances(params: TreasuryParams, allPages = false): Promise<RemittanceResult> {
   const criteria = parseRemittanceCriteria(params);
   const empty: RemittanceResult = { criteria, rows: [], count: 0, totalCents: 0, page: 1, pageCount: 1, details: [] };
   // La validation précède toute lecture des remises, même le décompte.
@@ -95,22 +95,49 @@ export async function readRemittances(params: TreasuryParams): Promise<Remittanc
          AND ($3::date IS NULL OR r.date_remise <= $3::date)
          AND ($4::text IS NULL OR r.numero_remise ILIKE '%' || $4 || '%')
        ORDER BY r.date_remise DESC, r.numero_remise ASC LIMIT $5 OFFSET $6`,
-      [...filters, criteria.pageSize, (page - 1) * criteria.pageSize],
+      // Une ligne de plus que le plafond suffit à refuser un export trop volumineux.
+      [...filters, allPages ? Math.min(count, 10_001) : criteria.pageSize, allPages ? 0 : (page - 1) * criteria.pageSize],
     ) as RemittanceRow[];
     const openedId = rows.find(row => row.id === criteria.openedId)?.id;
     let details: RemittanceDetail[] = [];
     if (openedId !== undefined) {
       // L'appartenance à la page autorisée est vérifiée avant la lecture du détail.
       // Le SIREN est aussi lié dans cette requête pour maintenir le cloisonnement.
-      details = await query(
-        `SELECT t.id, r.numero_siren, t.date_vente::text AS date_vente, t.numero_carte,
-                t.reseau, t.numero_autorisation, r.devise, t.montant::text AS montant, t.sens
-         FROM transactions t JOIN remises r ON r.id = t.remise_id
-         WHERE r.id = $1 AND ($2::text IS NULL OR r.numero_siren = $2)
-         ORDER BY t.date_vente ASC, t.numero_autorisation ASC`, [openedId, siren ?? null],
-      ) as RemittanceDetail[];
+      details = await readRemittanceTransactions(openedId, siren);
     }
     return { criteria, rows, count, totalCents, page, pageCount, siren, openedId, details };
+  } catch {
+    throw new Error("Lecture des remises indisponible.");
+  }
+}
+
+async function readRemittanceTransactions(id: number, siren?: string) {
+  // La page et l'export lient le même SIREN, après avoir autorisé la remise.
+  return query(
+    `SELECT t.id, r.numero_siren, t.date_vente::text AS date_vente, t.numero_carte,
+            t.reseau, t.numero_autorisation, r.devise, t.montant::text AS montant, t.sens
+     FROM transactions t JOIN remises r ON r.id = t.remise_id
+     WHERE r.id = $1 AND ($2::text IS NULL OR r.numero_siren = $2)
+     ORDER BY t.date_vente ASC, t.numero_autorisation ASC`, [id, siren ?? null],
+  ) as Promise<RemittanceDetail[]>;
+}
+
+export async function readRemittanceForExport(params: TreasuryParams) {
+  const criteria = parseRemittanceCriteria(params);
+  if (criteria.error || criteria.openedId === undefined) return { criteria };
+  const { siren } = await getRemittanceScope(params.siren);
+  try {
+    // Vérifier l'appartenance avant de lire les transactions, indépendamment de la page ouverte.
+    const rows = await query(
+      `SELECT r.id, r.numero_siren, e.raison_sociale, r.numero_remise, r.date_remise::text AS date_remise,
+              r.nb_transactions, r.montant_total::text AS montant_total, r.sens, r.devise
+       FROM remises r JOIN entreprises e ON e.numero_siren = r.numero_siren
+       WHERE r.id = $1 AND ($2::text IS NULL OR r.numero_siren = $2)`, [criteria.openedId, siren ?? null],
+    ) as RemittanceRow[];
+    if (!rows[0]) return { criteria };
+    const details = await readRemittanceTransactions(rows[0].id, siren);
+    const result: RemittanceResult = { criteria, rows, count: 1, totalCents: signedRemittanceCents(rows[0].montant_total, rows[0].sens), page: 1, pageCount: 1, details, siren, openedId: rows[0].id };
+    return { criteria, remittance: rows[0], result };
   } catch {
     throw new Error("Lecture des remises indisponible.");
   }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BandeauSynthese from "@/components/BandeauSynthese";
 import Tableau from "@/components/Tableau";
+import ExportFormulaire from "@/components/ExportFormulaire";
 import { formatMontant, formatSiren } from "@/lib/format";
 import { amountToCents, decimalFromCents, formatTreasuryDate, treasuryQuery, type TreasuryResult, type TreasurySort } from "@/lib/tresorerie";
 import type { Merchant } from "@/lib/access";
@@ -33,11 +34,7 @@ export default function Tresorerie({ result, basePath, companyName, merchants, i
     </form>
     {result.error ? <div className="login-error treasury-error" role="alert">{result.error}</div> : <>
       <div className="treasury-toolbar"><h2>{result.rows.length} {result.rows.length === 1 ? "annonce de trésorerie" : "annonces de trésorerie"}</h2>
-        <form action="/export/tresorerie" method="get" className="treasury-export" aria-label="Exporter les annonces">
-          {[...new URLSearchParams(treasuryQuery(result))].map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
-          <fieldset><legend className="sr-only">Format d&apos;export</legend><label><input type="radio" name="format" value="csv" defaultChecked /> CSV</label></fieldset>
-          <button type="submit" className="button-secondary">Exporter</button>
-        </form>
+        <ExportFormulaire action="/export/tresorerie" query={treasuryQuery(result)} label="Exporter les annonces" />
       </div>
       <Tableau caption="Annonces de trésorerie" columns={[
         { key: "date", label: "Date de valeur" },
