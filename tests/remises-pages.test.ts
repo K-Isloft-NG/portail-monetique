@@ -39,7 +39,7 @@ describe("page des remises du commerçant", () => {
     expect(html).toContain("Solde des remises");
     expect(html).toContain("Page 1 sur 3");
     expect(html).toMatch(/<a(?=[^>]*href="\/client\/remises")(?=[^>]*aria-current="page")[^>]*>/);
-    expect(html).not.toContain("Exporter");
+    expect(html).toContain('action="/export/remises"');
     expect(html).toContain('href="/client/impayes"');
   });
   it.each([{ debut: "31/02/2025" }, { numero: "%" }, { lignes: "0" }])("rend l'erreur %j sans tableau ni lecture des remises", async params => {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import BandeauSynthese from "@/components/BandeauSynthese";
 import Tableau from "@/components/Tableau";
+import ExportFormulaire from "@/components/ExportFormulaire";
 import { formatCard, formatMontant, formatSiren } from "@/lib/format";
 import { amountToCents, decimalFromCents, formatTreasuryDate, type TreasurySort } from "@/lib/tresorerie";
 import { unpaidQuery, type UnpaidResult } from "@/lib/impayes";
@@ -17,7 +18,9 @@ function CompanySummary({ result, basePath }: { result: UnpaidResult; basePath: 
   // Le lien d'entreprise retire les filtres, mais conserve l'ordre de lecture des impayés.
   const sortQuery = new URLSearchParams({ sort: result.criteria.sort.key, order: result.criteria.sort.order });
   return <section className="unpaid-companies" aria-labelledby="unpaid-companies-title">
-    <div className="treasury-toolbar"><h2 id="unpaid-companies-title">Somme des impayés par entreprise</h2></div>
+    <div className="treasury-toolbar"><h2 id="unpaid-companies-title">Somme des impayés par entreprise</h2>
+      <ExportFormulaire action="/export/impayes" query={`${unpaidQuery(result)}&vue=synthese`} label="Exporter la synthèse des impayés" />
+    </div>
     <Tableau caption="Somme des impayés par entreprise" sortLabel="Tri de la synthèse par entreprise" columns={[
       { key: "siren", label: "N° SIREN", sort: ascending ? "ascending" : "descending", href: `${basePath}?${unpaidQuery(result, result.criteria.sort, ascending ? "desc" : "asc")}` },
       { key: "name", label: "Raison sociale" }, { key: "count", label: "Nombre d'impayés", numeric: true }, { key: "amount", label: "Somme des impayés", numeric: true },
@@ -58,7 +61,9 @@ export default function Impayes({ result, basePath, companyName, merchants, inac
     {criteria.error ? <div className="login-error treasury-error unpaid-error" role="alert">{criteria.error}</div> : <>
       {merchants && <CompanySummary result={result} basePath={basePath} />}
       <section className="unpaid-list" aria-label="Liste des impayés">
-        <div className="treasury-toolbar"><h2>{count} {count === 1 ? "impayé" : "impayés"}</h2></div>
+        <div className="treasury-toolbar"><h2>{count} {count === 1 ? "impayé" : "impayés"}</h2>
+          <ExportFormulaire action="/export/impayes" query={unpaidQuery(result)} label="Exporter les impayés" />
+        </div>
         <Tableau caption="Liste des impayés" sortLabel="Tri des impayés" columns={[
           basePath.startsWith("/po") ? sortable("siren", "N° SIREN") : { key: "siren", label: "N° SIREN" },
           { key: "sale", label: "Date vente" }, sortable("date", "Date de remise"),
