@@ -1,3 +1,4 @@
+import { workspaceEntries } from "@/components/navigation-espaces";
 import LogoutButton from "@/components/LogoutButton";
 import EspaceConnecte from "@/components/EspaceConnecte";
 import Impayes from "@/components/Impayes";
@@ -10,7 +11,7 @@ export default async function ClientUnpaidPage({ searchParams }: { searchParams:
   const { session, company } = await getClientCompany();
   const result = await readUnpaid(await searchParams);
   return (
-    <EspaceConnecte entry="Impayés" href="/client/impayes" entries={[{ label: "Trésorerie", href: "/client" }, { label: "Remises", href: "/client/remises" }, { label: "Impayés", href: "/client/impayes" }]} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
+    <EspaceConnecte entry="Impayés" href="/client/impayes" entries={workspaceEntries("client")} identity={company.raison_sociale} detail={`SIREN ${formatSiren(session.siren)}`} logout={<LogoutButton />}>
       <Impayes result={result} basePath="/client/impayes" companyName={company.raison_sociale} />
     </EspaceConnecte>
   );
