@@ -1,3 +1,4 @@
+import { workspaceEntries } from "@/components/navigation-espaces";
 import LogoutButton from "@/components/LogoutButton";
 import EspaceConnecte from "@/components/EspaceConnecte";
 import Impayes from "@/components/Impayes";
@@ -12,7 +13,7 @@ export default async function PoUnpaidPage({ searchParams }: { searchParams: Pro
   // Une erreur de saisie ne conserve qu'une entreprise reconnue dans le filtre.
   if (result.criteria.error && typeof params.siren === "string" && merchants.some(merchant => merchant.numero_siren === params.siren)) result.siren = params.siren;
   return (
-    <EspaceConnecte entry="Impayés" href="/po/impayes" entries={[{ label: "Trésorerie", href: "/po" }, { label: "Remises", href: "/po/remises" }, { label: "Impayés", href: "/po/impayes" }]} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
+    <EspaceConnecte entry="Impayés" href="/po/impayes" entries={workspaceEntries("po")} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
       <Impayes result={result} basePath="/po/impayes" merchants={merchants} />
     </EspaceConnecte>
   );

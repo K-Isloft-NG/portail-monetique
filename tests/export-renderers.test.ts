@@ -22,7 +22,7 @@ describe("rendus des exports", () => {
     const zip = unzipSync(await renderXlsx(treasuryReport(TREASURY, COMPANY, NOW)));
     const sheet = strFromU8(zip['xl/worksheets/sheet1.xml']); const styles = strFromU8(zip['xl/styles.xml']); const strings = Object.values(zip).map(v => strFromU8(v)).join('');
     expect(sheet).toMatch(/<c[^>]*r="F6"[^>]*><v>-182\.23<\/v>/); expect(sheet).toMatch(/<c[^>]*r="A6"[^>]*><v>[0-9]+<\/v>/);
-    expect(sheet).toMatch(/<c[^>]*r="B6"[^>]*t="(?:s|inlineStr)"/); expect(strings).toContain('001234567'); expect(strings).toContain('ÉPICERIE À CÔTÉ'); expect(strings).toContain('Extrait le 03/11/2026 à 00:30');
+    expect(sheet).toMatch(/<c[^>]*r="B6"[^>]*t="(?:s|inlineStr)"/); expect(strings).toContain('001234567'); expect(strings).toContain('ÉPICERIE À CÔTÉ'); expect(strings).toContain('EXTRAIT DU 03/11/2026');
     expect(sheet).toContain('ySplit="5"'); expect(sheet).toContain('r="F7"'); expect(styles).toContain('dd/mm/yyyy'); expect(styles).toContain('[Red]');
   });
   it.each(['=1+1', '+1+1'])("écrit %s comme texte et jamais comme formule dans le XLSX", async name => {

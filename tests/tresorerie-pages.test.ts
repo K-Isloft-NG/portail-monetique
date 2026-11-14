@@ -20,7 +20,10 @@ describe("pages de trésorerie du Product Owner", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.readSession.mockResolvedValue(PO);
-    mocks.query.mockImplementation(async (sql: string) => sql.includes("FROM utilisateurs") ? [{ ...PO, est_actif: true }] : sql.includes("FROM entreprises") ? [COMPANY] : []);
+    mocks.query.mockImplementation(async (sql: string) => sql.includes("FROM utilisateurs")
+      ? [{ ...PO, est_actif: true }]
+      : sql.includes("FROM entreprises") ? [COMPANY]
+        : [{ id: 1, ...COMPANY, date_valeur: "2025-11-12", montant_total: "-182.23", nb_transactions: 1, devise: "EUR" }]);
   });
   it.each(["client", "admin"])("refuse le profil %s avant les données métier", async (profile) => {
     const session = { ...PO, profile, siren: profile === "client" ? "100000001" : null };
@@ -60,5 +63,13 @@ describe("pages de trésorerie du Product Owner", () => {
     expect(html).toContain('name="siren"');
     expect(html).toContain("commerçants enregistrés");
     expect(html).toContain("Entreprise fictive");
+  });
+  it("retire le solde du bandeau et du tableau pour les trois vues du PO", async () => {
+    for (const page of [await PoPage({ searchParams: Promise.resolve({}) }), await PoPage({ searchParams: Promise.resolve({ siren: COMPANY.numero_siren }) }), await companyPage(COMPANY.numero_siren)]) {
+      const html = renderToStaticMarkup(page);
+      expect(html).toContain("1 annonce");
+      expect(html).not.toContain(", solde");
+      expect(html).not.toContain("<tfoot>");
+    }
   });
 });
