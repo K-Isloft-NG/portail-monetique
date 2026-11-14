@@ -8,8 +8,8 @@ export type TreasuryRow = {
   nb_transactions: number; montant_total: string; devise: string;
 };
 export type TreasuryResult = {
-  rows: TreasuryRow[]; totalCents: number; siren?: string; dateText: string;
-  sort: TreasurySort; error?: string;
+  rows: TreasuryRow[]; totalCents?: number; siren?: string; dateText: string;
+  sort: TreasurySort; negativeOnly?: boolean; error?: string;
 };
 
 const DEFAULT_SORT: TreasurySort = { key: "date", order: "desc" };
@@ -72,31 +72,42 @@ export async function readTreasury(params: TreasuryParams): Promise<TreasuryResu
   const date = parseTreasuryDate(params.date);
   let sort = parseTreasurySort(params);
   // Une date invalide ne doit déclencher aucune lecture de données de trésorerie.
-  if (date.error) return { rows: [], totalCents: 0, dateText: date.text, sort, error: date.error };
+  if (date.error) return { rows: [], dateText: date.text, sort, error: date.error };
   const { session, siren } = await getTreasuryScope(params.siren);
+  const negativeOnly = session.profile === "po" && params.negatifs === "1";
   if (session.profile === "client" && sort.key === "siren") sort = { ...DEFAULT_SORT };
   let rows: TreasuryRow[];
   try {
     // Le périmètre vient de la garde serveur ; les valeurs restent paramétrées.
-    rows = await query(
-      `SELECT a.id, a.numero_siren, e.raison_sociale, a.date_valeur::text AS date_valeur,
+    // Les deux requêtes sont fixes hors tri autorisé et partagent les mêmes paramètres.
+    const statement = negativeOnly
+      ? `SELECT a.id, a.numero_siren, e.raison_sociale, a.date_valeur::text AS date_valeur,
+              a.nb_transactions, a.montant_total::text AS montant_total, a.devise
+         FROM annonces_tresorerie a JOIN entreprises e ON e.numero_siren = a.numero_siren
+         WHERE ($1::text IS NULL OR a.numero_siren = $1)
+           AND ($2::date IS NULL OR a.date_valeur = $2::date)
+           AND a.montant_total < 0
+         ORDER BY ${SORT_SQL[sort.key][sort.order]}`
+      : `SELECT a.id, a.numero_siren, e.raison_sociale, a.date_valeur::text AS date_valeur,
               a.nb_transactions, a.montant_total::text AS montant_total, a.devise
        FROM annonces_tresorerie a JOIN entreprises e ON e.numero_siren = a.numero_siren
        WHERE ($1::text IS NULL OR a.numero_siren = $1)
          AND ($2::date IS NULL OR a.date_valeur = $2::date)
-       ORDER BY ${SORT_SQL[sort.key][sort.order]}`,
-      [siren ?? null, date.iso ?? null],
-    ) as TreasuryRow[];
+       ORDER BY ${SORT_SQL[sort.key][sort.order]}`;
+    rows = await query(statement, [siren ?? null, date.iso ?? null]) as TreasuryRow[];
   } catch {
     throw new Error("Lecture de la trésorerie indisponible.");
   }
-  return { rows, totalCents: treasuryTotal(rows), siren, dateText: date.text, sort };
+  // Le solde cumulé est calculé uniquement pour le commerçant.
+  const totalCents = session.profile === "client" ? treasuryTotal(rows) : undefined;
+  return { rows, totalCents, siren, dateText: date.text, sort, negativeOnly };
 }
 
 export function treasuryQuery(result: TreasuryResult, sort = result.sort): string {
   const params = new URLSearchParams();
   if (result.dateText) params.set("date", result.dateText);
   if (result.siren) params.set("siren", result.siren);
+  if (result.negativeOnly) params.set("negatifs", "1");
   params.set("sort", sort.key);
   params.set("order", sort.order);
   return params.toString();

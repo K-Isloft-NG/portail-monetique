@@ -53,7 +53,9 @@ export function parseRemittanceCriteria(params: TreasuryParams): RemittanceCrite
   return {
     ...range,
     numberText, pageSize: size >= 1 && size <= 100 ? size : 10,
-    page: positiveId(params.page) ?? 1, openedId: positiveId(params.remise), error,
+    // La page sera bornée après le comptage, même si le nombre saisi est très grand.
+    page: typeof params.page === "string" && /^[0-9]+$/.test(params.page) ? Math.max(1, Number(params.page)) : 1,
+    openedId: positiveId(params.remise), error,
   };
 }
 

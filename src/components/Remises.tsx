@@ -51,7 +51,7 @@ export default function Remises({ result, basePath, companyName, merchants, inac
         <tbody>{result.rows.length ? result.rows.map(row => <Fragment key={row.id}><tr id={`remise-${row.id}`}>
           <Cell label="N° SIREN"><span className="tabular-nums">{formatSiren(row.numero_siren)}</span></Cell>
           <Cell label="Raison sociale">{row.raison_sociale}</Cell>
-          <Cell label="N° Remise"><a className="text-link tabular-nums" href={`${basePath}?${remittanceQuery(result, result.page, result.openedId === row.id ? undefined : row.id)}#remise-${row.id}`} aria-expanded={result.openedId === row.id} aria-controls={`detail-${row.id}`}><span aria-hidden="true">{result.openedId === row.id ? "▾ " : "▸ "}</span>{row.numero_remise}</a></Cell>
+          <Cell label="N° Remise"><a className="text-link tabular-nums" href={`${basePath}?${remittanceQuery(result, result.page, result.openedId === row.id ? undefined : row.id)}#remise-${row.id}`} aria-expanded={result.openedId === row.id} aria-controls={`detail-${row.id}`}><span aria-hidden="true">{result.openedId === row.id ? "− " : "+ "}</span>{row.numero_remise}</a></Cell>
           <Cell label="Date traitement"><span className="tabular-nums">{formatTreasuryDate(row.date_remise)}</span></Cell>
           <Cell label="Nbre transactions" numeric>{row.nb_transactions}</Cell>
           <Cell label="Devise (EUR)">{row.devise}</Cell>
@@ -84,6 +84,16 @@ export default function Remises({ result, basePath, companyName, merchants, inac
         {result.page > 1 ? <Link className="button-secondary" href={`${basePath}?${remittanceQuery(result, result.page - 1)}`}>Précédent</Link> : <span className="muted">Précédent</span>}
         <span className="tabular-nums">Page {result.page} sur {result.pageCount}</span>
         {result.page < result.pageCount ? <Link className="button-secondary" href={`${basePath}?${remittanceQuery(result, result.page + 1)}`}>Suivant</Link> : <span className="muted">Suivant</span>}
+        <form action={basePath} method="get" noValidate className="flex flex-wrap items-center gap-2">
+          {/* Le serveur borne la page et la navigation ferme le détail en cours. */}
+          {Array.from(new URLSearchParams(remittanceQuery(result))).filter(([name]) => name !== "page").map(([name, value]) =>
+            <input key={name} type="hidden" name={name} value={value} />,
+          )}
+          <label htmlFor="remittance-page">Aller à la page</label>
+          <input id="remittance-page" name="page" type="number" min={1} max={result.pageCount} step={1} defaultValue={result.page} aria-describedby="remittance-page-help" className="w-20 rounded border bg-white px-2 py-2" />
+          <span id="remittance-page-help">sur {result.pageCount}</span>
+          <button className="button-secondary" type="submit">Afficher</button>
+        </form>
       </nav>
     </>}
   </>);
