@@ -23,6 +23,13 @@ function title(label: string, company?: Merchant) {
   return `${label} ${scope}`.toLocaleUpperCase("fr-FR");
 }
 
+export function chartTitles(company?: Merchant) {
+  return {
+    evolution: title("Évolution des impayés", company),
+    motifs: title("Répartition des impayés par motif", company),
+  };
+}
+
 function period(criteria: { startText: string; endText: string }) {
   if (criteria.startText && criteria.endText) return `Du ${criteria.startText} au ${criteria.endText}`;
   if (criteria.startText) return `À partir du ${criteria.startText}`;

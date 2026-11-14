@@ -23,7 +23,7 @@ const SORT_SQL = {
 const COMPANY_ORDER_SQL = { asc: "r.numero_siren ASC", desc: "r.numero_siren DESC" };
 
 // Cette même clause définit l'impayé et les filtres pour la liste, le total et la synthèse.
-const UNPAID_FROM_SQL = `FROM transactions t
+export const UNPAID_FROM_SQL = `FROM transactions t
   JOIN remises r ON r.id = t.remise_id
   JOIN motifs_impayes m ON m.id = t.motif_impaye_id
   JOIN entreprises e ON e.numero_siren = r.numero_siren

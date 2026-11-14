@@ -1,3 +1,4 @@
+import { workspaceEntries } from "@/components/navigation-espaces";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
 import EspaceConnecte from "@/components/EspaceConnecte";
@@ -14,7 +15,7 @@ export default async function PoCompanyUnpaidPage({ params, searchParams }: {
   const result = await readUnpaid({ ...await searchParams, siren: company.numero_siren });
   const sortQuery = new URLSearchParams({ sort: result.criteria.sort.key, order: result.criteria.sort.order });
   return (
-    <EspaceConnecte entry="Impayés" href="/po/impayes" entries={[{ label: "Trésorerie", href: "/po" }, { label: "Remises", href: "/po/remises" }, { label: "Impayés", href: "/po/impayes" }]} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
+    <EspaceConnecte entry="Impayés" href="/po/impayes" entries={workspaceEntries("po")} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
       <p className="remittance-company-link"><Link href={`/po/entreprise/${company.numero_siren}?${sortQuery}`} className="text-link">Trésorerie de cette entreprise</Link></p>
       <p className="remittance-company-link"><Link href={`/po/entreprise/${company.numero_siren}/remises?${sortQuery}`} className="text-link">Remises de cette entreprise</Link></p>
       <Impayes result={{ ...result, siren: company.numero_siren }} basePath={`/po/entreprise/${company.numero_siren}/impayes`} companyName={company.raison_sociale} inactive={!company.est_active} />
