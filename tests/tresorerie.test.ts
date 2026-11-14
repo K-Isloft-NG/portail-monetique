@@ -32,14 +32,25 @@ describe("trésorerie", () => {
   });
   it.each(["100000002", ["100000002", "100000003"], "invalide"].map(value => [value]))("ignore le SIREN fourni par un commerçant (%j)", async (siren) => {
     expect((await getTreasuryScope(siren)).siren).toBe(CLIENT.siren);
-    await readTreasury({ siren, date: "12/11/2025", sort: "montant", order: "asc" });
+    await readTreasury({ siren, date: "12/11/2025", sort: "montant", order: "asc", negatifs: "1" });
     const call = mocks.query.mock.calls.find(([sql]) => sql.includes("FROM annonces_tresorerie"));
     expect(call?.[1]).toEqual([CLIENT.siren, "2025-11-12"]);
+    expect(call?.[0]).not.toContain("a.montant_total < 0");
     expect(call?.[0]).toContain("ORDER BY a.montant_total ASC");
     expect(call?.[0]).not.toContain("100000002");
     expect(call?.[0]).not.toContain("2025-11-12");
   });
   it("réserve le tri SIREN au PO", async () => expect((await readTreasury({ sort: "siren", order: "asc" })).sort).toEqual({ key: "date", order: "desc" }));
+  it("lie le filtre négatif aux autres critères du PO et le conserve dans le tri", async () => {
+    const po = { ...CLIENT, profile: "po", siren: null };
+    mocks.readSession.mockResolvedValue(po);
+    mocks.query.mockImplementation(async (sql: string) => sql.includes("FROM utilisateurs") ? [{ ...po, est_actif: true }] : sql.includes("FROM entreprises") ? [{ numero_siren: "100000002" }] : [ROW]);
+    const result = await readTreasury({ siren: "100000002", date: "12/11/2025", negatifs: "1" });
+    const call = mocks.query.mock.calls.find(([sql]) => sql.includes("FROM annonces_tresorerie"));
+    expect(call?.[0]).toContain("AND a.montant_total < 0");
+    expect(call?.[1]).toEqual(["100000002", "2025-11-12"]);
+    expect(new URLSearchParams(treasuryQuery(result, { key: "montant", order: "asc" })).get("negatifs")).toBe("1");
+  });
   it("laisse le PO consulter tous les comptes ou une entreprise existante", async () => {
     const po = { ...CLIENT, profile: "po", siren: null };
     mocks.readSession.mockResolvedValue(po);

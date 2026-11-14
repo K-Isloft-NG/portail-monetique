@@ -13,7 +13,7 @@ export default async function PoCompanyPage({ params, searchParams }: {
   const result = await readTreasury({ ...await searchParams, siren: company.numero_siren });
   return (
     <EspaceConnecte entry="Trésorerie" href="/po" entries={[{ label: "Trésorerie", href: "/po" }, { label: "Remises", href: "/po/remises" }, { label: "Impayés", href: "/po/impayes" }]} identity="Product Owner" detail="Profil banque" logout={<LogoutButton />}>
-      <Tresorerie result={{ ...result, siren: company.numero_siren }} basePath={`/po/entreprise/${company.numero_siren}`} companyName={company.raison_sociale} inactive={!company.est_active} />
+      <Tresorerie result={{ ...result, siren: company.numero_siren }} basePath={`/po/entreprise/${company.numero_siren}`} companyName={company.raison_sociale} inactive={!company.est_active} allowNegativeFilter />
       <p className="company-information"><Link href={`/po/entreprise/${company.numero_siren}/remises`} className="text-link">Remises de cette entreprise</Link></p>
       <p className="company-information"><Link href={`/po/entreprise/${company.numero_siren}/impayes?sort=${result.sort.key}&order=${result.sort.order}`} className="text-link">Impayés de cette entreprise</Link></p>
       <p className="company-information"><Link href="/po" className="text-link">Retour à tous les comptes</Link></p>

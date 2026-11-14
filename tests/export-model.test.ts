@@ -9,11 +9,16 @@ import { renderCsv } from "@/lib/export/csv";
 describe("modèles des tableaux exportés", () => {
   const reports = [treasuryReport(TREASURY, COMPANY, NOW), remittancesReport(REMITTANCES, COMPANY, NOW), remittanceDetailReport(REMITTANCES, REMITTANCES.rows[0], COMPANY, NOW), unpaidReport(UNPAID, COMPANY, NOW)];
   it.each(reports)("donne le titre accentué, le périmètre et l'horloge injectée pour $kind", report => {
-    expect(report.title).toBe(report.title.toLocaleUpperCase("fr-FR")); expect(report.title).toContain("ÉPICERIE À CÔTÉ"); expect(report.title).toContain("001\u00a0234\u00a0567"); expect(report.extractedAt).toBe(NOW);
+    expect(report.title).toBe(report.title.toLocaleUpperCase("fr-FR")); expect(report.title).toContain("DE L'ENTREPRISE ÉPICERIE À CÔTÉ N° SIREN 001234567"); expect(report.extractedAt).toBe(NOW);
     expect(report.rows[0]).toContain(-18223); expect(report.columns).toHaveLength(report.rows[0].length);
   });
-  it.each([treasuryReport({ ...TREASURY, siren: undefined }, undefined, NOW), remittancesReport({ ...REMITTANCES, siren: undefined }, undefined, NOW), unpaidReport({ ...UNPAID, siren: undefined }, undefined, NOW), unpaidSummaryReport(UNPAID, undefined, NOW)])("nomme la vue globale sans inventer un SIREN ($kind)", report => {
-    expect(report.title).toContain("TOUTES LES ENTREPRISES"); expect(report.title).not.toContain("SIREN");
+  it.each([
+    [treasuryReport({ ...TREASURY, siren: undefined }, undefined, NOW), "LISTE DES ANNONCES DE TRÉSORERIE DE TOUTES LES ENTREPRISES"],
+    [remittancesReport({ ...REMITTANCES, siren: undefined }, undefined, NOW), "LISTE DES REMISES DE TOUTES LES ENTREPRISES"],
+    [unpaidReport({ ...UNPAID, siren: undefined }, undefined, NOW), "LISTE DES IMPAYÉS DE TOUTES LES ENTREPRISES"],
+    [unpaidSummaryReport(UNPAID, undefined, NOW), "SOMME DES IMPAYÉS PAR ENTREPRISE"],
+  ] as const)("nomme la vue globale sans inventer un SIREN", (report, expected) => {
+    expect(report.title).toBe(expected);
   });
   it("décrit les critères et les tris", () => {
     expect(reports[0].subtitle).toContain("Date de valeur : 12/11/2025"); expect(reports[0].subtitle).toContain("montant, croissant");
@@ -28,7 +33,11 @@ describe("modèles des tableaux exportés", () => {
   it("accepte un tableau vide, un total nul et toutes les dates", () => {
     const report = treasuryReport({ ...TREASURY, rows: [], totalCents: 0, dateText: "" }); expect(report.rows).toEqual([]); expect(report.total?.cents).toBe(0); expect(report.subtitle).toContain("Toutes les dates");
   });
-  it("date l'extraction en heure de Paris", () => expect(extractionText(NOW)).toBe("Extrait le 03/11/2026 à 00:30"));
+  it("date l'extraction en Europe/Paris sans afficher l'heure", () => expect(extractionText(NOW)).toBe("EXTRAIT DU 03/11/2026"));
+  it("omet le total en l'absence de solde et conserve un solde nul", () => {
+    expect(treasuryReport({ ...TREASURY, totalCents: undefined }, COMPANY, NOW)).not.toHaveProperty("total");
+    expect(treasuryReport({ ...TREASURY, totalCents: 0 }, COMPANY, NOW).total?.cents).toBe(0);
+  });
   it.each([
     { params: {}, filters: "" },
     { params: { debut: "01/11/2025" }, filters: "À partir du 01/11/2025" },
@@ -42,6 +51,9 @@ describe("modèles des tableaux exportés", () => {
     const baseline = remittanceDetailReport({ ...REMITTANCES, criteria: parseRemittanceCriteria({}) }, REMITTANCES.rows[0], COMPANY, NOW);
     const report = remittanceDetailReport({ ...REMITTANCES, criteria: parseRemittanceCriteria(params) }, REMITTANCES.rows[0], COMPANY, NOW);
     expect(report.subtitle).toBe(`Date de traitement : 12/11/2025${filters ? ` ; ${filters}` : ""} ; Tri : date de vente, autorisation croissantes`);
-    expect(report.title).toBe(baseline.title); expect(report.rows).toEqual(baseline.rows); expect(report.siren).toBe(baseline.siren); expect(renderCsv(report)).toBe(renderCsv(baseline));
+    expect(report.title).toBe(baseline.title);
+    expect(report.rows).toEqual(baseline.rows);
+    expect(report.siren).toBe(baseline.siren);
+    expect(renderCsv(report)).toBe(renderCsv(baseline));
   });
 });

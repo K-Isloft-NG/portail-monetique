@@ -51,15 +51,24 @@ describe("page des remises du commerçant", () => {
   it("repart sans page ni détail lors d'une recherche et conserve les critères dans Suivant", async () => {
     const html = renderToStaticMarkup(await page({ numero: "202511", debut: "01/11/2025", lignes: "5" }));
     expect(html).toContain('method="get"');
-    expect(html).not.toContain('name="page"');
+    const searchForm = html.match(/<form[^>]*aria-label="Critères de remises"[^>]*>[\s\S]*?<\/form>/)?.[0];
+    expect(searchForm).toBeDefined();
+    expect(searchForm).not.toContain('name="page"');
     expect(html).not.toContain('name="remise"');
     expect(html).toContain("numero=202511");
     expect(html).toContain("lignes=5");
     expect(html).toContain("page=2");
+    const paginationForm = html.match(/<form[^>]*novalidate[^>]*>[\s\S]*?<\/form>/i)?.[0];
+    expect(paginationForm).toContain('for="remittance-page">Aller à la page');
+    expect(paginationForm).toContain('name="numero" value="202511"');
+    expect(paginationForm).toContain('name="debut" value="01/11/2025"');
+    expect(paginationForm).toContain('name="lignes" value="5"');
+    expect(paginationForm).not.toContain('name="remise"');
   });
   it("ouvre le détail autorisé, annonce son état et propose un lien de fermeture", async () => {
     const html = renderToStaticMarkup(await page({ remise: "1", numero: "202511", page: "2", lignes: "5" }));
     expect(html).toContain('aria-expanded="true" aria-controls="detail-1"');
+    expect(html).toContain('<span aria-hidden="true">− </span>');
     expect(html).toContain("Détail de la remise R-100000001-202511-1");
     for (const value of ["Date vente", "N° Carte", "Réseau", "N° autorisation", DETAIL.numero_carte, "654321", "CB"]) expect(html).toContain(value);
     const link = html.match(/<a[^>]*aria-controls="detail-1"[^>]*>/)?.[0];
@@ -72,6 +81,7 @@ describe("page des remises du commerçant", () => {
     const html = renderToStaticMarkup(await page({ remise: "999" }));
     expect(html).not.toContain("Détail de la remise");
     expect(html).toContain('aria-expanded="false" aria-controls="detail-1"');
+    expect(html).toContain('<span aria-hidden="true">+ </span>');
     expect(mocks.query.mock.calls.some(([sql]) => sql.includes("FROM transactions"))).toBe(false);
   });
   it("masque défensivement une source non masquée dans le rendu", async () => {
